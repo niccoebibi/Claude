@@ -2,16 +2,36 @@
 // the real frontend plus demo/mock.js, which simulates the backend in the browser.
 // Usage: node scripts/build-demo.mjs  ->  demo/dist/
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import QRCode from 'qrcode';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PUB = path.join(ROOT, 'public');
 const OUT = path.join(ROOT, 'demo', 'dist');
-const DEMO_URL = 'https://matrimonio-niccolo-beatrice.onrender.com';
+const DEMO_URL = 'https://www.17aprile2027.it';
+
+// The couple's illustrations, from their wedding website. Kept out of the (public) repo:
+// downloaded into demo/assets/ (git-ignored) on the first build.
+const IMAGES = {
+  'copertina.jpg':
+    'https://withjoy.com/media/ec6908316eb9dcbfc1009574f2735702b0784230d344cb8cb/8f840220-a95a-11f1-ab70-676aeed8e992-Designer%20(91).png',
+  'palazzo-brancaccio.jpg':
+    'https://withjoy.com/media/ec6908316eb9dcbfc1009574f2735702b0784230d344cb8cb/b8dc2f50-a958-11f1-8b7a-1f334aaa03c7-Designer%20(89).png',
+  'lista-nozze.jpg':
+    'https://withjoy.com/media/ec6908316eb9dcbfc1009574f2735702b0784230d344cb8cb/79fa86d0-b0ef-11f1-86db-f3b340722355-Gemini_Generated_Image_vazshrvazshrvazs.jpg',
+};
 
 fs.rmSync(OUT, { recursive: true, force: true });
-for (const dir of ['css', 'js', 'icon', 'demo']) fs.mkdirSync(path.join(OUT, dir), { recursive: true });
+for (const dir of ['css', 'js', 'icon', 'demo', 'img']) fs.mkdirSync(path.join(OUT, dir), { recursive: true });
+
+const ASSETS = path.join(ROOT, 'demo', 'assets');
+fs.mkdirSync(ASSETS, { recursive: true });
+for (const [name, url] of Object.entries(IMAGES)) {
+  const file = path.join(ASSETS, name);
+  if (!fs.existsSync(file)) execFileSync('curl', ['-sSfL', '--max-time', '60', '-o', file, url]);
+  fs.copyFileSync(file, path.join(OUT, 'img', name));
+}
 
 /** Apply literal replacements, failing if a pattern no longer matches the app code. */
 function patch(file, pairs) {
@@ -29,10 +49,10 @@ patch('app.js', [
   ['export async function pushState() {\n', 'export async function pushState() {\n  if (window.__DEMO) return window.__DEMO.pushState();\n'],
   ['async function enablePush() {\n', 'async function enablePush() {\n  if (window.__DEMO) return window.__DEMO.enablePush();\n'],
   ['async function syncPushSubscription() {\n', 'async function syncPushSubscription() {\n  if (window.__DEMO) return;\n'],
-  ['`/uploads/${', '`${'],
+  ['`/uploads/${', '`${', 2],
 ]);
 patch('admin.js', [
-  ['`/uploads/${', '`${'],
+  ['`/uploads/${', '`${', 2],
   ['src="/uploads/${esc(s.coverImage)}"', 'src="${esc(s.coverImage)}"'],
   ['src="/icon/icon-192.png?v=${s.iconVersion}"', 'src="${window.__DEMO?.icon || `icon/icon-192.png?v=${s.iconVersion}`}"'],
   ['/api/admin/qr.svg', 'qr.svg', 3],
@@ -54,7 +74,7 @@ fs.writeFileSync(
   `<title>App del matrimonio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=Italianno&display=swap" />
 <link rel="stylesheet" href="css/app.css" />
 <style>
   :root { --accent: #6f826a; }
@@ -68,6 +88,12 @@ fs.writeFileSync(
     padding: 8px 16px; background: #2e2a26; color: #fbf8f3; font: 500 13px/1.3 var(--sans);
   }
   #demo-bar .db-label { opacity: 0.8; }
+  #demo-bar .db-url {
+    flex-basis: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+    max-width: 420px; margin: 0 auto; padding: 7px 14px; border-radius: 12px;
+    background: rgba(251, 248, 243, 0.14); font: 600 14px/1.2 var(--sans); letter-spacing: 0.01em;
+  }
+  #demo-bar .db-url svg { width: 12px; height: 12px; opacity: 0.8; }
   #demo-bar .db-seg { display: flex; background: rgba(251, 248, 243, 0.12); border-radius: 999px; padding: 3px; }
   #demo-bar button {
     appearance: none; border: 0; background: none; color: inherit; font: 600 13px/1 var(--sans);
@@ -96,7 +122,8 @@ fs.writeFileSync(
   @media (prefers-reduced-motion: reduce) { .demo-push { transition: none; } }
 </style>
 <div id="demo-bar">
-  <span class="db-label">Anteprima con dati di esempio · guarda come</span>
+  <div class="db-url" aria-label="Indirizzo dell'app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>17aprile2027.it</div>
+  <span class="db-label">Anteprima · invitati e tavoli di esempio · guarda come</span>
   <div class="db-seg" role="group" aria-label="Punto di vista">
     <button type="button" data-demo-role="guest">Invitato</button>
     <button type="button" data-demo-role="admin">Sposi (Regia)</button>

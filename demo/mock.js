@@ -6,8 +6,8 @@
 (function () {
   'use strict';
 
-  const KEY = 'wedding-demo-v2';
-  const DEMO_URL = 'https://matrimonio-niccolo-beatrice.onrender.com';
+  const KEY = 'wedding-demo-v4';
+  const DEMO_URL = 'https://www.17aprile2027.it';
   const ACCENTS = {
     salvia: { name: 'Salvia', color: '#6F826A' },
     oro: { name: 'Oro', color: '#A8844E' },
@@ -16,6 +16,7 @@
     lavanda: { name: 'Lavanda', color: '#7E72A6' },
     blu: { name: 'Blu notte', color: '#2F4A6D' },
     bordeaux: { name: 'Bordeaux', color: '#7D2E3E' },
+    cobalto: { name: 'Blu cobalto', color: '#3D518A' },
   };
   const esc = (s) =>
     String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -71,11 +72,11 @@
     const t = Date.now();
     const tables = [
       { id: 1, name: 'Sposi', description: 'Il tavolo degli sposi e dei testimoni, di fronte alla sala', x: 50, y: 14 },
-      { id: 2, name: 'Positano', description: 'Vicino alla vetrata, lato giardino', x: 20, y: 42 },
-      { id: 3, name: 'Amalfi', description: 'Al centro della sala', x: 50, y: 46 },
-      { id: 4, name: 'Capri', description: 'Accanto alla pista da ballo', x: 80, y: 42 },
-      { id: 5, name: 'Ravello', description: "Vicino all'ingresso", x: 30, y: 78 },
-      { id: 6, name: 'Sorrento', description: 'Sotto il pergolato', x: 70, y: 78 },
+      { id: 2, name: 'Trastevere', description: 'Vicino alle vetrate, lato giardino', x: 20, y: 42 },
+      { id: 3, name: 'Monti', description: 'Al centro del salone, sotto il lampadario', x: 50, y: 46 },
+      { id: 4, name: 'Aventino', description: 'Accanto alla pista da ballo', x: 80, y: 42 },
+      { id: 5, name: 'Testaccio', description: "Vicino all'ingresso", x: 30, y: 78 },
+      { id: 6, name: 'Gianicolo', description: 'Accanto al camino', x: 70, y: 78 },
     ].map((x, i) => ({ ...x, sort: i + 1 }));
     const people = [
       ['Niccolò', 1], ['Beatrice', 1], ['Anna Conti', 1], ['Paolo Ferri', 1], ['Laura Galli', 1], ['Roberto Neri', 1],
@@ -130,7 +131,7 @@
       msg(6, 16, 'Teresa Ferri', 'text', 'Auguri ragazzi, una giornata perfetta 🌸', null, 95, 6),
     ];
     return {
-      v: 2,
+      v: 4,
       meId: null,
       admin: false,
       pushEnabled: false,
@@ -143,27 +144,29 @@
       messages,
       settings: {
         coupleNames: 'Niccolò & Beatrice',
-        weddingDate: rome(2027, 4, 24, 11, 0),
+        // From www.17aprile2027.it: the date has no time set there, so midnight in Rome.
+        weddingDate: rome(2027, 4, 17, 0, 0),
         tz: 'Europe/Rome',
-        accent: 'salvia',
-        welcomeTitle: 'Benvenuti!',
+        accent: 'cobalto',
+        nameFont: 'script',
+        welcomeTitle: 'Il nostro giorno',
         welcomeText:
-          "Siamo felicissimi di condividere con voi il giorno più bello della nostra vita.\nQui trovate tutte le informazioni utili: orari, luoghi e qualche sorpresa. Il giorno del matrimonio questa app diventerà la nostra bacheca: condividete foto e messaggi!",
-        coverImage: null,
+          "Una data da ricordare. Una giornata da vivere insieme. Un sì per tutta la vita.\n\nDopo otto anni, la promessa di sceglierci per sempre.\n\nNon vediamo l'ora di celebrare con voi uno dei momenti più importanti della nostra vita.",
+        // Absolute URL: a relative url() inside a CSS variable resolves against the stylesheet.
+        coverImage: new URL('img/copertina.jpg', document.baseURI).href,
+        coverTone: 'light',
         sections: [
-          { icon: '⛪', title: 'La cerimonia', subtitle: 'Ore 11:00', body: 'Chiesa di Santa Maria Assunta\nPiazza Flavio Gioia, Positano', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Chiesa+Santa+Maria+Assunta+Positano' },
-          { icon: '🥂', title: 'Il ricevimento', subtitle: 'Dalle 13:00', body: 'Villa Le Rose\nVia dei Giardini 10, Positano', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Positano' },
-          { icon: '🗓️', title: 'Il programma', subtitle: '', body: '11:00 · Cerimonia\n12:30 · Aperitivo in giardino\n14:00 · Pranzo\n17:30 · Taglio della torta\n18:30 · Musica e balli', linkLabel: '', linkUrl: '' },
-          { icon: '👗', title: 'Dress code', subtitle: '', body: 'Elegante, colori pastello. Lasciate il bianco alla sposa 😉', linkLabel: '', linkUrl: '' },
-          { icon: '🎁', title: 'Lista nozze', subtitle: '', body: 'La vostra presenza è il regalo più bello.\nPer chi desidera farci un pensiero: IBAN IT00 X000 0000 0000 0000 0000 000', linkLabel: '', linkUrl: '' },
-          { icon: '📞', title: 'Contatti', subtitle: '', body: 'Per qualsiasi cosa scriveteci pure:\nBeatrice 333 000 0000 · Niccolò 333 000 0001', linkLabel: '', linkUrl: '' },
+          { icon: '⛪', title: 'Il momento del sì', subtitle: 'Sabato 17 aprile 2027', body: 'Tutti i dettagli sulla cerimonia sono sul nostro sito.', linkLabel: 'Vedi i dettagli', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/page/il-momento-del-s', image: '' },
+          { icon: '🥂', title: 'Dopo il sì', subtitle: 'Palazzo Brancaccio', body: 'Viale del Monte Oppio 7, Roma\nA due passi dal Colosseo.', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Palazzo+Brancaccio,+Viale+del+Monte+Oppio+7,+Roma', image: 'img/palazzo-brancaccio.jpg' },
+          { icon: '💌', title: 'Conferma la tua presenza', subtitle: 'Entro il 28 febbraio', body: 'Saremmo felici di ricevere la vostra conferma.', linkLabel: 'Conferma (RSVP)', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/rsvp', image: '' },
+          { icon: '🎁', title: 'Un pensiero per noi', subtitle: 'Lista nozze', body: 'La vostra presenza è il regalo più bello.\nPer chi desidera farci un pensiero: la nostra casa e il nostro viaggio di nozze.', linkLabel: 'Scopri la lista nozze', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/page/un-pensiero-per-noi', image: 'img/lista-nozze.jpg' },
         ],
         mode: 'info',
         autoLiveAt: null,
         notifyOnLive: true,
         allowPhotos: true,
         allowChat: true,
-        revealAt: rome(2027, 4, 17, 18, 0),
+        revealAt: rome(2027, 4, 10, 18, 0),
         revealAnnounced: false,
         revealMessage: '',
         lastAnnouncement: null,
@@ -182,7 +185,7 @@
   } catch {
     store = null;
   }
-  if (!store || store.v !== 2) store = seed();
+  if (!store || store.v !== 4) store = seed();
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(store));
@@ -273,11 +276,37 @@
     }, 3600);
   }
 
+  let autoIcon = null;
+  function makeAutoIcon() {
+    const s = S();
+    const c = document.createElement('canvas');
+    c.width = c.height = 192;
+    const g = c.getContext('2d');
+    g.fillStyle = (ACCENTS[s.accent] || ACCENTS.salvia).color;
+    g.fillRect(0, 0, 192, 192);
+    g.strokeStyle = 'rgba(251,248,243,.55)';
+    g.lineWidth = 2.3;
+    g.beginPath();
+    g.arc(96, 96, 69, 0, Math.PI * 2);
+    g.stroke();
+    g.fillStyle = '#FBF8F3';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    const script = s.nameFont === 'script';
+    g.font = script ? '400 77px "Italianno", serif' : '600 58px "Cormorant Garamond", serif';
+    const parts = s.coupleNames.split(/\s*(?:&|\+|\se\s)\s*/i).filter(Boolean);
+    g.fillText(parts.length > 1 ? `${parts[0][0]}&${parts[1][0]}` : s.coupleNames.slice(0, 2), 96, script ? 102 : 99);
+    autoIcon = c.toDataURL('image/png');
+  }
+  Promise.all([document.fonts?.load('400 77px "Italianno"'), document.fonts?.load('600 58px "Cormorant Garamond"')])
+    .catch(() => {})
+    .then(makeAutoIcon);
+
   function fakePush(title, body, hash) {
     const el = document.createElement('div');
     el.className = 'demo-push';
     el.innerHTML = `<div class="dp-caption">Anteprima della notifica sul telefono</div>
-      <div class="dp-card"><img src="${store.iconUrl || 'icon/icon-192.png'}" alt="" />
+      <div class="dp-card"><img src="${store.iconUrl || autoIcon || 'icon/icon-192.png'}" alt="" />
       <div><div class="dp-top"><b>${esc(S().coupleNames)}</b><span>ora</span></div>
       <div class="dp-title">${esc(title)}</div><div class="dp-body">${esc(body)}</div></div></div>`;
     document.body.appendChild(el);
@@ -512,7 +541,7 @@
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, 'Controlla l’indirizzo email');
       let g = store.guests.find((x) => nameKey(x.name) === nameKey(name));
       if (!g) {
-        // In the preview newcomers sit at "Positano", so the reveal has something to show.
+        // In the preview newcomers sit at "Trastevere", so the reveal has something to show.
         g = { id: store.nextId.guest++, name, email, tableId: 2, seat: '', registered: true, registeredAt: Date.now(), pushDevices: 0, notifiedAt: null, emailStatus: null };
         store.guests.push(g);
       }
@@ -644,7 +673,7 @@
 
     ['PATCH', /^\/api\/admin\/settings$/, (b) => {
       const s = S();
-      const keys = ['coupleNames', 'weddingDate', 'tz', 'accent', 'welcomeTitle', 'welcomeText', 'sections', 'autoLiveAt', 'notifyOnLive', 'allowPhotos', 'allowChat', 'revealAt', 'revealMessage', 'adminEmail'];
+      const keys = ['coupleNames', 'weddingDate', 'tz', 'accent', 'nameFont', 'coverTone', 'welcomeTitle', 'welcomeText', 'sections', 'autoLiveAt', 'notifyOnLive', 'allowPhotos', 'allowChat', 'revealAt', 'revealMessage', 'adminEmail'];
       for (const k of keys) if (k in b) s[k] = b[k];
       if (!s.coupleNames) s.coupleNames = 'Niccolò & Beatrice';
       if (b.email) s.email = { ...s.email, ...b.email, pass: b.email.pass || s.email.pass };
@@ -653,6 +682,7 @@
         store.guests.forEach(resetNotice);
       }
       save();
+      makeAutoIcon();
       broadcast('settings', publicSettings());
       return { settings: adminSettings() };
     }],
@@ -814,6 +844,7 @@
     });
 
   const UPLOADS = [
+    [/^\/api\/admin\/upload\/section$/, async (form) => ({ file: await readAsDataURL(form.get('file')) })],
     [/^\/api\/photos$/, async (form) => {
       const nu = needUser();
       if (nu) return nu;
@@ -926,7 +957,7 @@
       setTimeout(() => fakePush('🔔 Notifiche attive!', 'Riceverai qui gli aggiornamenti del matrimonio.', ''), 300);
     },
     get icon() {
-      return store.iconUrl || null;
+      return store.iconUrl || autoIcon || null;
     },
     host: DEMO_URL.replace(/^https?:\/\//, ''),
   };

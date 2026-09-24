@@ -60,6 +60,8 @@ const SETTING_RULES = {
   weddingDate: isoOrNull,
   tz: (v) => (validTz(v) ? v : 'Europe/Rome'),
   accent: (v) => (ACCENTS[v] ? v : 'salvia'),
+  nameFont: (v) => (v === 'script' ? 'script' : 'serif'),
+  coverTone: (v) => (v === 'light' ? 'light' : 'dark'),
   welcomeTitle: (v) => cleanText(v, 120),
   welcomeText: (v) => cleanText(v, 5000),
   sections: (v) =>
@@ -71,6 +73,7 @@ const SETTING_RULES = {
           body: cleanText(s?.body, 5000),
           linkLabel: cleanText(s?.linkLabel, 60),
           linkUrl: safeUrl(s?.linkUrl),
+          image: /^[\w.-]+$/.test(String(s?.image || '')) ? String(s.image) : '',
         }))
       : getSettings().sections,
   autoLiveAt: isoOrNull,
@@ -487,6 +490,12 @@ export function adminRouter(app) {
   /* ---------- Images: cover, floor plan, app icon ---------- */
 
   const IMAGE_KEYS = { cover: 'coverImage', floorplan: 'floorplan' };
+
+  // Images for the info cards: stored as files, referenced from settings.sections[].image.
+  r.post('/upload/section', upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Nessun file' });
+    res.json({ file: saveImage(req.file, 'section') });
+  });
 
   r.post('/upload/:kind', upload.single('file'), (req, res) => {
     const key = IMAGE_KEYS[req.params.kind];

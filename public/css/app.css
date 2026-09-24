@@ -2088,6 +2088,97 @@ details.more summary {
   }
 }
 
+/* ---------- Couple's style options ---------- */
+
+/* Names in a script face (setting "Stile dei nomi: corsivo"). */
+.names-script .hero-names,
+.names-script .brand-names,
+.names-script .pc-names,
+.names-script .screen-title {
+  font-family: 'Italianno', var(--serif);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.names-script .hero-names {
+  font-size: clamp(3.6rem, 16vw, 5.8rem);
+  line-height: 1;
+}
+.names-script .hero-names .amp {
+  font-style: normal;
+}
+.names-script .brand {
+  font-size: 2rem;
+  line-height: 1;
+}
+.names-script .pc-names {
+  font-size: 2.8rem;
+}
+.names-script .screen-title {
+  font-size: 3.2rem;
+}
+
+/* Light cover pictures (drawings, watercolours): keep them bright, dark text on top. */
+.hero.has-cover.tone-light {
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 50%, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.1) 75%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 60%, var(--bg)),
+    var(--cover) center / cover no-repeat;
+}
+.hero.has-cover.tone-light::after {
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.hero.has-cover.tone-light .hero-kicker,
+.hero.has-cover.tone-light .hero-names .amp {
+  color: var(--accent);
+}
+.hero.has-cover.tone-light .hero-names {
+  color: var(--accent);
+}
+.hero.has-cover.tone-light .cd-box {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* Info card with a picture on top. */
+.info-card.has-img {
+  flex-wrap: wrap;
+  padding-top: 0;
+  overflow: hidden;
+}
+.info-img {
+  display: block;
+  width: calc(100% + 36px);
+  max-width: none;
+  margin: 0 -18px 4px;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+.font-sample.serif {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding: 0 6px;
+}
+.font-sample.script {
+  font-family: 'Italianno', var(--serif);
+  font-size: 1.7rem;
+  line-height: 1;
+  padding: 0 6px;
+}
+.se-img {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.se-img img {
+  width: 84px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 /* ---------- Projector screen ---------- */
 
 body.screen-mode {

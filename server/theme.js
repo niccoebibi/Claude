@@ -7,4 +7,5 @@ export const ACCENTS = {
   lavanda: { name: 'Lavanda', color: '#7E72A6' },
   blu: { name: 'Blu notte', color: '#2F4A6D' },
   bordeaux: { name: 'Bordeaux', color: '#7D2E3E' },
+  cobalto: { name: 'Blu cobalto', color: '#3D518A' },
 };

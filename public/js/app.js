@@ -69,6 +69,7 @@ export async function loadState() {
 function applyTheme() {
   const accent = ACCENTS[S.settings.accent]?.color || ACCENTS.salvia.color;
   document.documentElement.style.setProperty('--accent', accent);
+  document.documentElement.classList.toggle('names-script', S.settings.nameFont === 'script');
   document.title = S.settings.coupleNames || 'Matrimonio';
   const link = $('#manifest-link');
   if (link && S.me?.loginKey) link.href = `/manifest.webmanifest?k=${encodeURIComponent(S.me.loginKey)}`;
@@ -345,7 +346,7 @@ function heroHTML({ compact = false } = {}) {
   const s = S.settings;
   const cover = s.coverImage ? `/uploads/${s.coverImage}` : '';
   return `
-    <section class="hero ${cover ? 'has-cover' : ''} ${compact ? 'compact' : ''}" ${cover ? `style="--cover:url('${cover}')"` : ''}>
+    <section class="hero ${cover ? `has-cover tone-${s.coverTone === 'light' ? 'light' : 'dark'}` : ''} ${compact ? 'compact' : ''}" ${cover ? `style="--cover:url('${cover}')"` : ''}>
       <div class="hero-inner">
         <div class="hero-kicker">Il matrimonio di</div>
         <h1 class="hero-names">${namesHTML(s.coupleNames)}</h1>
@@ -721,8 +722,10 @@ export function adminLoginSheet() {
 
 function sectionHTML(sec) {
   if (!sec.title && !sec.body) return '';
+  const img = sec.image ? `/uploads/${sec.image}` : '';
   return `
-    <section class="card info-card">
+    <section class="card info-card ${img ? 'has-img' : ''}">
+      ${img ? `<img class="info-img" src="${esc(img)}" alt="" loading="lazy" />` : ''}
       ${sec.icon ? `<div class="info-icon">${esc(sec.icon)}</div>` : ''}
       <div class="info-body">
         ${sec.title ? `<h3>${esc(sec.title)}</h3>` : ''}

@@ -159,10 +159,12 @@ export const DEFAULTS = {
   weddingDate: null,
   tz: 'Europe/Rome',
   accent: 'salvia',
+  nameFont: 'serif',
   welcomeTitle: 'Benvenuti!',
   welcomeText:
     "Siamo felicissimi di condividere con voi il giorno più bello della nostra vita.\nQui trovate tutte le informazioni utili: orari, luoghi e qualche sorpresa. Il giorno del matrimonio questa app diventerà la nostra bacheca: condividete foto e messaggi!",
   coverImage: null,
+  coverTone: 'dark',
   sections: DEFAULT_SECTIONS,
   mode: 'info',
   autoLiveAt: null,

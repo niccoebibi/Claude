@@ -288,3 +288,26 @@ test('settings validation keeps links safe', async () => {
   assert.equal(r.data.settings.accent, 'salvia');
   assert.equal(r.data.settings.email.pass, '', 'password never returned');
 });
+
+test('style options and card images', async () => {
+  const form = new FormData();
+  form.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 's.jpg');
+  const up = await admin.post('/api/admin/upload/section', undefined, { form });
+  assert.equal(up.status, 200);
+  assert.match(up.data.file, /^section-[\w.-]+\.jpg$/);
+  const r = await admin.patch('/api/admin/settings', {
+    accent: 'cobalto',
+    nameFont: 'script',
+    coverTone: 'light',
+    sections: [{ title: 'Dopo il sì', image: up.data.file }, { title: 'X', image: '../../etc/passwd' }],
+  });
+  assert.equal(r.data.settings.accent, 'cobalto');
+  assert.equal(r.data.settings.nameFont, 'script');
+  assert.equal(r.data.settings.coverTone, 'light');
+  assert.equal(r.data.settings.sections[0].image, up.data.file);
+  assert.equal(r.data.settings.sections[1].image, '', 'paths are rejected');
+  const bogus = await admin.patch('/api/admin/settings', { nameFont: 'comic', coverTone: 'neon' });
+  assert.equal(bogus.data.settings.nameFont, 'serif');
+  assert.equal(bogus.data.settings.coverTone, 'dark');
+  assert.equal((await fetch(`${BASE}/uploads/${up.data.file}`)).status, 200);
+});

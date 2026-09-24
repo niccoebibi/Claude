@@ -769,7 +769,7 @@ function monogram(names) {
   return parts.length >= 2 ? `${parts[0][0]}&${parts[1][0]}`.toUpperCase() : String(names).slice(0, 2).toUpperCase();
 }
 
-async function drawIcon(size, { accent, text, image, inset = 0 }) {
+async function drawIcon(size, { accent, text, image, inset = 0, script = false }) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
   const g = c.getContext('2d');
@@ -788,21 +788,43 @@ async function drawIcon(size, { accent, text, image, inset = 0 }) {
     g.fillStyle = '#FBF8F3';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.font = `600 ${Math.round(size * (0.3 - inset * 0.5))}px "Cormorant Garamond", Georgia, serif`;
-    g.fillText(text, size / 2, size / 2 + size * 0.015);
+    g.font = script
+      ? `400 ${Math.round(size * (0.4 - inset * 0.6))}px "Italianno", "Cormorant Garamond", serif`
+      : `600 ${Math.round(size * (0.3 - inset * 0.5))}px "Cormorant Garamond", Georgia, serif`;
+    g.fillText(text, size / 2, size / 2 + size * (script ? 0.03 : 0.015));
   }
   return new Promise((res) => c.toBlob(res, 'image/png'));
 }
 
-async function uploadIcons({ accent, text, image }) {
-  if (!image) await document.fonts.load('600 100px "Cormorant Garamond"').catch(() => {});
+async function uploadIcons({ accent, text, image, script = false }) {
+  if (!image) {
+    const font = script ? '400 100px "Italianno"' : '600 100px "Cormorant Garamond"';
+    await document.fonts.load(font).catch(() => {});
+  }
+  const opts = { accent, text, image, script };
   const form = new FormData();
   form.append('kind', image ? 'photo' : 'monogram');
-  form.append('i512', await drawIcon(512, { accent, text, image }), 'i512.png');
-  form.append('i192', await drawIcon(192, { accent, text, image }), 'i192.png');
-  form.append('i180', await drawIcon(180, { accent, text, image }), 'i180.png');
-  form.append('m512', await drawIcon(512, { accent, text, image, inset: 0.06 }), 'm512.png');
+  form.append('i512', await drawIcon(512, opts), 'i512.png');
+  form.append('i192', await drawIcon(192, opts), 'i192.png');
+  form.append('i180', await drawIcon(180, opts), 'i180.png');
+  form.append('m512', await drawIcon(512, { ...opts, inset: 0.06 }), 'm512.png');
   return uploadForm('/api/admin/icon', form);
+}
+
+async function imageTone(blob) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const c = document.createElement('canvas');
+    c.width = c.height = 24;
+    const g = c.getContext('2d');
+    g.drawImage(bmp, 0, 0, 24, 24);
+    const d = g.getImageData(0, 0, 24, 24).data;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+    return sum / (d.length / 4) / 255 > 0.62 ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
 }
 
 function sectionEditor(sec, i, n) {
@@ -823,6 +845,12 @@ function sectionEditor(sec, i, n) {
         <label class="field"><span>Testo del pulsante</span><input data-f="linkLabel" value="${esc(sec.linkLabel)}" placeholder="Es. Apri in Maps" /></label>
         <label class="field"><span>Link del pulsante</span><input data-f="linkUrl" value="${esc(sec.linkUrl)}" placeholder="https://maps.google.com/…" inputmode="url" /></label>
       </div>
+      <input type="hidden" data-f="image" value="${esc(sec.image || '')}" />
+      <div class="se-img">
+        ${sec.image ? `<img src="${esc(`/uploads/${sec.image}`)}" alt="" />` : ''}
+        <button type="button" class="btn small ghost" data-img-up>${icon('image')} ${sec.image ? 'Cambia immagine' : 'Aggiungi immagine'}</button>
+        ${sec.image ? '<button type="button" class="btn small ghost" data-img-rm>Rimuovi</button>' : ''}
+      </div>
     </div>`;
 }
 
@@ -831,6 +859,7 @@ async function adminContent(main) {
   const s = O.settings;
   let sections = structuredClone(s.sections || []);
   let accent = s.accent;
+  let nameFont = s.nameFont === 'script' ? 'script' : 'serif';
 
   main.innerHTML = `
     <div class="container admin">
@@ -852,6 +881,12 @@ async function adminContent(main) {
                   `<button type="button" class="swatch ${k === accent ? 'on' : ''}" data-accent="${k}" style="--c:${a.color}" title="${a.name}"><i></i><span>${a.name}</span></button>`,
               )
               .join('')}</div>
+          </div>
+          <div class="field"><span>Stile dei nomi</span>
+            <div class="swatches">
+              <button type="button" class="swatch ${nameFont === 'serif' ? 'on' : ''}" data-font="serif" style="--c:var(--accent)"><span class="font-sample serif">Classico</span></button>
+              <button type="button" class="swatch ${nameFont === 'script' ? 'on' : ''}" data-font="script" style="--c:var(--accent)"><span class="font-sample script">Corsivo</span></button>
+            </div>
           </div>
           <div class="field"><span>Foto di copertina</span>
             <div class="cover-preview">${s.coverImage ? `<img src="/uploads/${esc(s.coverImage)}" alt="" />` : '<div class="muted small">Nessuna foto: verrà usato uno sfondo elegante</div>'}</div>
@@ -904,7 +939,20 @@ async function adminContent(main) {
     if (!btn) return;
     const i = Number(btn.closest('[data-i]').dataset.i);
     sections = readSections();
-    if (btn.dataset.move) {
+    if (btn.matches('[data-img-up]')) {
+      return pickFile(async (file) => {
+        const [img] = await resizeImage(file, [{ max: 1600, quality: 0.86 }]);
+        const form = new FormData();
+        form.append('file', img.blob, 'section.jpg');
+        const r = await uploadForm('/api/admin/upload/section', form);
+        sections = readSections();
+        sections[i].image = r.file;
+        drawSections();
+        toast('Immagine aggiunta: ricordati di salvare');
+      });
+    }
+    if (btn.matches('[data-img-rm]')) sections[i].image = '';
+    else if (btn.dataset.move) {
       const j = i + Number(btn.dataset.move);
       [sections[i], sections[j]] = [sections[j], sections[i]];
     } else if (btn.matches('[data-remove]')) {
@@ -918,7 +966,11 @@ async function adminContent(main) {
     const t = e.target.closest('button');
     if (!t) return;
     try {
-      if (t.dataset.accent) {
+      if (t.dataset.font) {
+        nameFont = t.dataset.font;
+        $$('[data-font]', main).forEach((b) => b.classList.toggle('on', b === t));
+        document.documentElement.classList.toggle('names-script', nameFont === 'script');
+      } else if (t.dataset.accent) {
         accent = t.dataset.accent;
         $$('.swatch', main).forEach((b) => b.classList.toggle('on', b === t));
         document.documentElement.style.setProperty('--accent', ACCENTS[accent].color);
@@ -928,6 +980,7 @@ async function adminContent(main) {
           const form = new FormData();
           form.append('file', img.blob, 'cover.jpg');
           await uploadForm('/api/admin/upload/cover', form);
+          await api('/api/admin/settings', { method: 'PATCH', body: { coverTone: await imageTone(img.blob) } });
           await ctx.refreshState();
           toast('Copertina aggiornata');
           ctx.route();
@@ -938,7 +991,7 @@ async function adminContent(main) {
         ctx.route();
       } else if (t.id === 'icon-mono') {
         const names = $('[name=coupleNames]', main).value;
-        await uploadIcons({ accent: ACCENTS[accent].color, text: monogram(names) });
+        await uploadIcons({ accent: ACCENTS[accent].color, text: monogram(names), script: nameFont === 'script' });
         toast('Icona creata ✨');
         ctx.route();
       } else if (t.id === 'icon-up') {
@@ -977,14 +1030,20 @@ async function adminContent(main) {
           coupleNames: f.coupleNames.value,
           weddingDate: localInputToIso(f.weddingDate.value, s.tz),
           accent,
+          nameFont,
           welcomeTitle: f.welcomeTitle.value,
           welcomeText: f.welcomeText.value,
           sections: readSections(),
         },
       });
       // Keep the home-screen icon in tune with names and colour unless the couple uploaded a photo.
-      if (s.customIcon !== 'photo' && (!s.customIcon || namesChanged || accent !== s.accent)) {
-        await uploadIcons({ accent: ACCENTS[accent].color, text: monogram(f.coupleNames.value) }).catch(() => {});
+      const looksChanged = namesChanged || accent !== s.accent || nameFont !== s.nameFont;
+      if (s.customIcon !== 'photo' && (!s.customIcon || looksChanged)) {
+        await uploadIcons({
+          accent: ACCENTS[accent].color,
+          text: monogram(f.coupleNames.value),
+          script: nameFont === 'script',
+        }).catch(() => {});
       }
       await ctx.refreshState();
       ctx.renderShell();
