@@ -148,14 +148,14 @@ const DEFAULT_SECTIONS = [
     icon: '📞',
     title: 'Contatti',
     subtitle: '',
-    body: 'Per qualsiasi cosa scriveteci pure:\nSposa 333 000 0000 · Sposo 333 000 0001',
+    body: 'Per qualsiasi cosa scriveteci pure:\nBeatrice 333 000 0000 · Niccolò 333 000 0001',
     linkLabel: '',
     linkUrl: '',
   },
 ];
 
 export const DEFAULTS = {
-  coupleNames: 'Giulia & Marco',
+  coupleNames: 'Niccolò & Beatrice',
   weddingDate: null,
   tz: 'Europe/Rome',
   accent: 'salvia',

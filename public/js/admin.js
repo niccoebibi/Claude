@@ -53,7 +53,7 @@ async function adminHome(main) {
     const live = s.mode === 'live';
     const revealFuture = s.revealAt && !O.revealed;
     const checklist = [
-      checkRow(s.coupleNames !== 'Giulia & Marco' && !!s.weddingDate, 'Personalizza nomi, data e informazioni', '#admin/contenuti'),
+      checkRow(!!s.weddingDate, 'Imposta data e informazioni', '#admin/contenuti'),
       checkRow(O.emailEnabled, "Configura l'invio delle email", '#admin/email'),
       checkRow(st.tables > 0 && st.withTable > 0, 'Inserisci tavoli e invitati', '#admin/ospiti'),
       checkRow(!!s.revealAt, 'Scegli quando svelare i tavoli', '#admin'),
@@ -839,7 +839,7 @@ async function adminContent(main) {
       <form id="content-form" class="form">
         <section class="card">
           <h3 class="card-title small-title">💍 Gli sposi</h3>
-          <label class="field"><span>Nomi</span><input name="coupleNames" required value="${esc(s.coupleNames)}" placeholder="Giulia & Marco" /></label>
+          <label class="field"><span>Nomi</span><input name="coupleNames" required value="${esc(s.coupleNames)}" placeholder="Niccolò & Beatrice" /></label>
           <label class="field"><span>Data e ora del matrimonio</span><input name="weddingDate" type="datetime-local" value="${isoToLocalInput(s.weddingDate, s.tz)}" /></label>
         </section>
 

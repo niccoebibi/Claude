@@ -6,8 +6,8 @@
 (function () {
   'use strict';
 
-  const KEY = 'wedding-demo-v1';
-  const DEMO_URL = 'https://matrimonio-giulia-marco.onrender.com';
+  const KEY = 'wedding-demo-v2';
+  const DEMO_URL = 'https://matrimonio-niccolo-beatrice.onrender.com';
   const ACCENTS = {
     salvia: { name: 'Salvia', color: '#6F826A' },
     oro: { name: 'Oro', color: '#A8844E' },
@@ -70,7 +70,7 @@
   function seed() {
     const t = Date.now();
     const tables = [
-      { id: 1, name: 'Sposi', description: 'Il tavolo imperiale di fronte alla sala', x: 50, y: 14 },
+      { id: 1, name: 'Sposi', description: 'Il tavolo degli sposi e dei testimoni, di fronte alla sala', x: 50, y: 14 },
       { id: 2, name: 'Positano', description: 'Vicino alla vetrata, lato giardino', x: 20, y: 42 },
       { id: 3, name: 'Amalfi', description: 'Al centro della sala', x: 50, y: 46 },
       { id: 4, name: 'Capri', description: 'Accanto alla pista da ballo', x: 80, y: 42 },
@@ -78,7 +78,7 @@
       { id: 6, name: 'Sorrento', description: 'Sotto il pergolato', x: 70, y: 78 },
     ].map((x, i) => ({ ...x, sort: i + 1 }));
     const people = [
-      ['Giulia Conti', 1], ['Marco Ferri', 1], ['Anna Conti', 1], ['Paolo Conti', 1], ['Laura Ferri', 1], ['Roberto Ferri', 1],
+      ['Niccolò', 1], ['Beatrice', 1], ['Anna Conti', 1], ['Paolo Ferri', 1], ['Laura Galli', 1], ['Roberto Neri', 1],
       ['Sara Galli', 2], ['Luca Bianchi', 2], ['Chiara Moretti', 2], ['Davide Moretti', 2], ['Elena Russo', 2],
       ['Carla Conti', 3], ['Franco Conti', 3], ['Rosa Esposito', 3], ['Giovanni Esposito', 3], ['Teresa Ferri', 3], ['Mario Ferri', 3],
       ['Federica Rinaldi', 4], ['Alessandro Rinaldi', 4], ['Martina Colombo', 4], ['Simone Colombo', 4], ['Giorgia Marino', 4],
@@ -88,7 +88,7 @@
     const guests = people.map(([name, tableId], i) => ({
       id: i + 1,
       name,
-      email: i % 5 === 4 ? null : `${name.split(' ')[0].toLowerCase()}.${name.split(' ')[1].toLowerCase()}@email.it`,
+      email: i % 5 === 4 ? null : `${name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, '.')}@email.it`,
       tableId,
       seat: '',
       registered: i % 4 !== 3,
@@ -125,12 +125,12 @@
       msg(1, 8, 'Luca Bianchi', 'photo', 'La chiesa è meravigliosa 💐', photos[0], 190, 12),
       msg(2, 12, 'Carla Conti', 'text', 'Che emozione! Siete bellissimi ❤️', null, 175, 8),
       msg(3, 7, 'Sara Galli', 'photo', 'Primo brindisi! 🥂', photos[1], 150, 15),
-      msg(4, null, 'Giulia & Marco', 'announce', "Benvenuti!\nL'aperitivo è servito in giardino 🍸", null, 140, 21, true),
+      msg(4, null, 'Niccolò & Beatrice', 'announce', "Benvenuti!\nL'aperitivo è servito in giardino 🍸", null, 140, 21, true),
       msg(5, 20, 'Martina Colombo', 'photo', '', photos[2], 120, 9),
       msg(6, 16, 'Teresa Ferri', 'text', 'Auguri ragazzi, una giornata perfetta 🌸', null, 95, 6),
     ];
     return {
-      v: 1,
+      v: 2,
       meId: null,
       admin: false,
       pushEnabled: false,
@@ -142,7 +142,7 @@
       guests,
       messages,
       settings: {
-        coupleNames: 'Giulia & Marco',
+        coupleNames: 'Niccolò & Beatrice',
         weddingDate: rome(2027, 4, 24, 11, 0),
         tz: 'Europe/Rome',
         accent: 'salvia',
@@ -156,7 +156,7 @@
           { icon: '🗓️', title: 'Il programma', subtitle: '', body: '11:00 · Cerimonia\n12:30 · Aperitivo in giardino\n14:00 · Pranzo\n17:30 · Taglio della torta\n18:30 · Musica e balli', linkLabel: '', linkUrl: '' },
           { icon: '👗', title: 'Dress code', subtitle: '', body: 'Elegante, colori pastello. Lasciate il bianco alla sposa 😉', linkLabel: '', linkUrl: '' },
           { icon: '🎁', title: 'Lista nozze', subtitle: '', body: 'La vostra presenza è il regalo più bello.\nPer chi desidera farci un pensiero: IBAN IT00 X000 0000 0000 0000 0000 000', linkLabel: '', linkUrl: '' },
-          { icon: '📞', title: 'Contatti', subtitle: '', body: 'Per qualsiasi cosa scriveteci pure:\nGiulia 333 000 0000 · Marco 333 000 0001', linkLabel: '', linkUrl: '' },
+          { icon: '📞', title: 'Contatti', subtitle: '', body: 'Per qualsiasi cosa scriveteci pure:\nBeatrice 333 000 0000 · Niccolò 333 000 0001', linkLabel: '', linkUrl: '' },
         ],
         mode: 'info',
         autoLiveAt: null,
@@ -182,7 +182,7 @@
   } catch {
     store = null;
   }
-  if (!store || store.v !== 1) store = seed();
+  if (!store || store.v !== 2) store = seed();
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(store));
@@ -646,7 +646,7 @@
       const s = S();
       const keys = ['coupleNames', 'weddingDate', 'tz', 'accent', 'welcomeTitle', 'welcomeText', 'sections', 'autoLiveAt', 'notifyOnLive', 'allowPhotos', 'allowChat', 'revealAt', 'revealMessage', 'adminEmail'];
       for (const k of keys) if (k in b) s[k] = b[k];
-      if (!s.coupleNames) s.coupleNames = 'Giulia & Marco';
+      if (!s.coupleNames) s.coupleNames = 'Niccolò & Beatrice';
       if (b.email) s.email = { ...s.email, ...b.email, pass: b.email.pass || s.email.pass };
       if ('revealAt' in b && (!b.revealAt || Date.parse(b.revealAt) > Date.now())) {
         s.revealAnnounced = false;

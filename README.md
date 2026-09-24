@@ -22,7 +22,7 @@ L'app gira su **[Render](https://render.com)**. Costa circa **9,50 $ al mese**: 
 3. Se richiesto, aggiungete una carta di pagamento (il piano con disco per le foto è a pagamento).
 4. Cliccate **Deploy Blueprint**. Dopo 3–5 minuti l'app è online a un indirizzo tipo `https://matrimonio-xxxx.onrender.com`: lo trovate in alto nella pagina del servizio.
 
-> Volete un indirizzo più bello (es. `giuliaemarco.it`)? Compratelo su un qualsiasi registrar (circa 10 €/anno) e aggiungetelo in Render › Settings › Custom Domains.
+> Volete un indirizzo più bello (es. `niccoloebeatrice.it`)? Compratelo su un qualsiasi registrar (circa 10 €/anno) e aggiungetelo in Render › Settings › Custom Domains.
 
 ## 2. Configurare l'app dalla Regia
 

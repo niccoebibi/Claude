@@ -8,7 +8,7 @@ import QRCode from 'qrcode';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PUB = path.join(ROOT, 'public');
 const OUT = path.join(ROOT, 'demo', 'dist');
-const DEMO_URL = 'https://matrimonio-giulia-marco.onrender.com';
+const DEMO_URL = 'https://matrimonio-niccolo-beatrice.onrender.com';
 
 fs.rmSync(OUT, { recursive: true, force: true });
 for (const dir of ['css', 'js', 'icon', 'demo']) fs.mkdirSync(path.join(OUT, dir), { recursive: true });
@@ -106,7 +106,7 @@ fs.writeFileSync(
 <div id="app">
   <div class="boot">
     <div class="boot-rings" aria-hidden="true"></div>
-    <div class="boot-names">Giulia &amp; Marco</div>
+    <div class="boot-names">Niccolò &amp; Beatrice</div>
   </div>
 </div>
 <div id="toasts" aria-live="polite"></div>

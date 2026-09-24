@@ -94,7 +94,7 @@ test('public state and shell', async () => {
   assert.ok(r.data.vapidPublicKey.length > 40);
   assert.equal(r.data.settings.email, undefined, 'private settings must not leak');
   const html = await client().get('/');
-  assert.match(html.data, /<title>Giulia &amp; Marco<\/title>/);
+  assert.match(html.data, /<title>Niccolò &amp; Beatrice<\/title>/);
   const manifest = await client().get('/manifest.webmanifest');
   assert.equal(manifest.data.display, 'standalone');
 });
