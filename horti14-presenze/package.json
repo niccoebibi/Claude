@@ -1,0 +1,21 @@
+{
+  "name": "horti14-presenze",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Presenze del personale di Horti 14: calendario mensile, ferie, permessi, malattia, promemoria e registro certificato delle modifiche.",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "dev": "DATA_DIR=./data ADMIN_EMAIL=titolare@example.com ADMIN_PASSWORD=titolare123 MAIL_DEV=1 node --watch --disable-warning=ExperimentalWarning server/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^5.2.1",
+    "nodemailer": "^10.0.10",
+    "web-push": "^3.6.7"
+  }
+}

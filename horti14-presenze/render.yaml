@@ -1,0 +1,24 @@
+# Render Blueprint (Dashboard › New › Blueprint, Blueprint path: horti14-presenze/render.yaml).
+# Costo indicativo: 7 $/mese (piano 0.5c-512mb) + 1 GB di disco (0,25 $/mese).
+services:
+  - type: web
+    name: presenze-horti14
+    runtime: node
+    rootDir: horti14-presenze
+    plan: 0.5c-512mb
+    region: frankfurt
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    disk:
+      name: dati
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

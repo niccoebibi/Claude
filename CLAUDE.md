@@ -20,3 +20,4 @@
 - **Anteprima interattiva:** `node scripts/build-demo.mjs` genera `demo/dist/`, pubblicata come Artifact su https://claude.ai/artifact/NZez7XRnfGFV2MNQoLMxHk. Le illustrazioni degli sposi vengono scaricate in `demo/assets/`, che non va nel repository pubblico. Dopo ogni modifica all'app, ricostruiscila e ripubblicala.
 - **Repository GitHub pubblico:** non caricarci foto o dati personali degli sposi oltre a quelli già pubblici sul loro sito.
 - **Preferenza dell'utente:** vuole il massimo risultato con il minimo sforzo e il minor numero di domande possibile.
+- **Altro progetto nello stesso repository:** `horti14-presenze/` è l'app presenze dei dipendenti di Horti 14, l'hotel dell'utente. Le note sono in `horti14-presenze/CLAUDE.md`.
