@@ -13,12 +13,14 @@ Tutto si gestisce dalla **Regia**, il pannello degli sposi dentro l'app.
 
 ## 1. Metterla online (circa 10 minuti, una volta sola)
 
-Serve un account su **[Render](https://render.com)** (hosting affidabile, costa circa 7–10 $ al mese: piano Starter più 10 GB di spazio per le foto). Potete disattivarlo dopo il matrimonio, dopo aver scaricato le foto.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/niccoebibi/Claude)
 
-1. Andate su [dashboard.render.com](https://dashboard.render.com) e registratevi con **«Sign in with GitHub»**.
-2. Cliccate **New › Blueprint** e scegliete questo repository (`niccoebibi/claude`).
-3. Render legge da solo il file `render.yaml`. Vi chiederà solo **ADMIN_PASSWORD**: scrivete la password della Regia (sceglietene una robusta e tenetela per voi).
-4. Cliccate **Apply**. Dopo 2–3 minuti l'app è online a un indirizzo tipo `https://matrimonio-xxxx.onrender.com`.
+L'app gira su **[Render](https://render.com)**. Costa circa **9,50 $ al mese**: 7 $ per il server più 2,50 $ per 10 GB di spazio per le foto. Nel mese del matrimonio può aggiungersi qualche dollaro di traffico, perché oltre i 5 GB inclusi si pagano 0,15 $/GB. Dopo il matrimonio, scaricate le foto e cancellate il servizio.
+
+1. Cliccate il pulsante **Deploy to Render** qui sopra e registratevi (il modo più rapido è **«GitHub»**).
+2. Render legge da solo la configurazione (`render.yaml`) e vi chiede solo **ADMIN_PASSWORD**: è la password della Regia. Sceglietene una robusta e tenetela per voi.
+3. Se richiesto, aggiungete una carta di pagamento (il piano con disco per le foto è a pagamento).
+4. Cliccate **Deploy Blueprint**. Dopo 3–5 minuti l'app è online a un indirizzo tipo `https://matrimonio-xxxx.onrender.com`: lo trovate in alto nella pagina del servizio.
 
 > Volete un indirizzo più bello (es. `giuliaemarco.it`)? Compratelo su un qualsiasi registrar (circa 10 €/anno) e aggiungetelo in Render › Settings › Custom Domains.
 

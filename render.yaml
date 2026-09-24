@@ -1,14 +1,15 @@
 # Render Blueprint: crea l'app online con un clic (Dashboard › New › Blueprint).
+# Costo indicativo: 7 $/mese (piano 0.5c-512mb) + 10 GB di disco a 0,25 $/GB.
 services:
   - type: web
     name: matrimonio
     runtime: node
-    plan: starter
+    plan: 0.5c-512mb
     region: frankfurt
     buildCommand: npm ci --omit=dev
     startCommand: npm start
     healthCheckPath: /healthz
-    autoDeploy: true
+    autoDeployTrigger: commit
     disk:
       name: dati
       mountPath: /var/data
