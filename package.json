@@ -1,0 +1,24 @@
+{
+  "name": "wedding-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "App del matrimonio: info per gli invitati, bacheca live con chat e foto, svelamento dei tavoli con notifiche push ed email.",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "dev": "DATA_DIR=./data ADMIN_PASSWORD=admin MAIL_DEV=1 node --watch --disable-warning=ExperimentalWarning server/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "express": "^5.2.1",
+    "multer": "^2.4.0",
+    "nodemailer": "^10.0.10",
+    "qrcode": "^1.5.4",
+    "web-push": "^3.6.7"
+  }
+}
