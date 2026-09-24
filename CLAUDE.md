@@ -1,14 +1,14 @@
 # Note per Claude
 
 - **Lingua:** parla sempre in italiano con l'utente, anche nei messaggi intermedi mentre lavori.
-- **Chi sono:** Niccolò & Beatrice, gli sposi. Il matrimonio è **sabato 17 aprile 2027** (fuso Europe/Rome; l'orario non è ancora indicato).
+- **Chi sono:** Niccolò & Beatrice, gli sposi. Il matrimonio è **sabato 17 aprile 2027**, fuso Europe/Rome. Agli invitati si comunica l'orario **17:00**, come sull'invito cartaceo: nell'app e nel conto alla rovescia va usato solo questo orario.
 - **Il loro sito attuale:** `www.17aprile2027.it` (dominio loro) rimanda al sito Joy https://withjoy.com/niccolo-beatrice-2027. Le pagine sono protette da password: pubblicamente si leggono solo il testo di benvenuto e i titoli. Contiene:
   - pagina «Il momento del sì»: la cerimonia;
   - pagina «Dopo il sì»: il ricevimento;
   - RSVP (Joy dice 28 febbraio, ma gli sposi hanno chiesto **31 gennaio**);
   - pagina «Un pensiero per noi»: lista nozze, con illustrazione di casa e viaggio.
 - **Dettagli dati dagli sposi (settembre 2026):**
-  - cerimonia alla **Basilica dei Santi Giovanni e Paolo al Celio**, Piazza dei Santi Giovanni e Paolo 13, Roma, con parcheggio riservato presso la Basilica; l'orario non è ancora noto;
+  - cerimonia alla **Basilica dei Santi Giovanni e Paolo al Celio**, Piazza dei Santi Giovanni e Paolo 13, Roma, con parcheggio riservato presso la Basilica; orario comunicato: 17:00;
   - ricevimento a **Palazzo Brancaccio**, Viale del Monte Oppio 7, Roma, con parcheggio riservato nel cortile del Palazzo;
   - conferma presenza entro il **31 gennaio**;
   - tavoli svelati **alle 18:45 del 17 aprile**, il giorno stesso delle nozze;

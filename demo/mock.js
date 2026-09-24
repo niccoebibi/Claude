@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const KEY = 'wedding-demo-v5';
+  const KEY = 'wedding-demo-v6';
   const DEMO_URL = 'https://www.17aprile2027.it';
   const ACCENTS = {
     salvia: { name: 'Salvia', color: '#6F826A' },
@@ -131,7 +131,7 @@
       msg(6, 16, 'Teresa Ferri', 'text', 'Auguri ragazzi, una giornata perfetta 🌸', null, 95, 6),
     ];
     return {
-      v: 5,
+      v: 6,
       meId: null,
       admin: false,
       pushEnabled: false,
@@ -144,8 +144,8 @@
       messages,
       settings: {
         coupleNames: 'Niccolò & Beatrice',
-        // From www.17aprile2027.it: the date has no time set there, so midnight in Rome.
-        weddingDate: rome(2027, 4, 17, 0, 0),
+        // Time as printed on the paper invitation.
+        weddingDate: rome(2027, 4, 17, 17, 0),
         tz: 'Europe/Rome',
         accent: 'cobalto',
         nameFont: 'script',
@@ -156,7 +156,7 @@
         coverImage: new URL('img/copertina.jpg', document.baseURI).href,
         coverTone: 'light',
         sections: [
-          { icon: '⛪', title: 'Il momento del sì', subtitle: 'Sabato 17 aprile 2027', body: 'Basilica dei Santi Giovanni e Paolo al Celio\nPiazza dei Santi Giovanni e Paolo 13, Roma\n\n🅿️ Parcheggio riservato presso la Basilica', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Basilica+dei+Santi+Giovanni+e+Paolo+al+Celio,+Piazza+dei+Santi+Giovanni+e+Paolo+13,+Roma', image: '' },
+          { icon: '⛪', title: 'Il momento del sì', subtitle: 'Sabato 17 aprile 2027 · ore 17:00', body: 'Basilica dei Santi Giovanni e Paolo al Celio\nPiazza dei Santi Giovanni e Paolo 13, Roma\n\n🅿️ Parcheggio riservato presso la Basilica', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Basilica+dei+Santi+Giovanni+e+Paolo+al+Celio,+Piazza+dei+Santi+Giovanni+e+Paolo+13,+Roma', image: '' },
           { icon: '🥂', title: 'Dopo il sì', subtitle: 'Palazzo Brancaccio', body: 'Viale del Monte Oppio 7, Roma\n\n🅿️ Parcheggio riservato nel cortile del Palazzo', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Palazzo+Brancaccio,+Viale+del+Monte+Oppio+7,+Roma', image: 'img/palazzo-brancaccio.jpg' },
           { icon: '💌', title: 'Conferma la tua presenza', subtitle: 'Entro il 31 gennaio', body: 'Saremmo felici di ricevere la vostra conferma.', linkLabel: 'Conferma (RSVP)', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/rsvp', image: '' },
           { icon: '🎁', title: 'Un pensiero per noi', subtitle: 'Lista nozze', body: 'La vostra presenza è il regalo più bello.\nPer chi desidera farci un pensiero: la nostra casa e il nostro viaggio di nozze.', linkLabel: 'Scopri la lista nozze', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/page/un-pensiero-per-noi', image: 'img/lista-nozze.jpg' },
@@ -185,7 +185,7 @@
   } catch {
     store = null;
   }
-  if (!store || store.v !== 5) store = seed();
+  if (!store || store.v !== 6) store = seed();
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(store));
