@@ -6,3 +6,4 @@
 - **Stato:** codice completo e testato (`npm test`). Deve ancora andare online su Render tramite `render.yaml`: il deploy lo fanno gli sposi con il link nel README. Consiglio dato: andare online verso gennaio–febbraio 2027.
 - **Anteprima interattiva:** `node scripts/build-demo.mjs` genera `demo/dist/`, pubblicata come Artifact su https://claude.ai/artifact/NZez7XRnfGFV2MNQoLMxHk. Dopo ogni modifica all'app, ricostruiscila e ripubblicala.
 - **Preferenza dell'utente:** vuole il massimo risultato con il minimo sforzo e il minor numero di domande possibile.
+- **Dominio:** hanno `17aprile.it` (registrato su Aruba). A settembre 2026 mostra solo la pagina predefinita di Aruba, senza contenuti sul matrimonio. Potrà diventare l'indirizzo dell'app (dominio personalizzato su Render). Il nome fa pensare a sabato 17 aprile 2027 come data delle nozze, ma è da confermare.
