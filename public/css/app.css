@@ -697,8 +697,10 @@ input[type='checkbox'] {
 }
 .info-card {
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
 }
 .info-icon {
   flex: none;
@@ -711,7 +713,7 @@ input[type='checkbox'] {
   font-size: 1.5rem;
 }
 .info-body {
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 .info-body h3 {
@@ -740,12 +742,17 @@ input[type='checkbox'] {
 }
 .teaser.reveal {
   display: block;
+  text-align: center;
   background: linear-gradient(135deg, var(--accent-soft), #fff);
 }
 .teaser-top {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+}
+.teaser.reveal .countdown.small {
+  justify-content: center;
 }
 .teaser > div:nth-child(2) {
   flex: 1;
@@ -775,12 +782,14 @@ input[type='checkbox'] {
 }
 .announce-card {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
   border: 1.5px solid var(--accent-mid);
 }
 .announce-card > .ic {
   color: var(--accent);
-  margin-top: 3px;
 }
 .foot {
   text-align: center;
@@ -788,6 +797,16 @@ input[type='checkbox'] {
   font-size: 1.2rem;
   color: var(--muted);
   margin: 26px 0 10px;
+}
+
+#home-push {
+  text-align: center;
+}
+#home-push .small-title {
+  justify-content: center;
+}
+#home-push .steps {
+  text-align: left;
 }
 
 /* ---------- Auth ---------- */
@@ -2142,7 +2161,6 @@ details.more summary {
 
 /* Info card with a picture on top. */
 .info-card.has-img {
-  flex-wrap: wrap;
   padding-top: 0;
   overflow: hidden;
 }

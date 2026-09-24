@@ -415,6 +415,12 @@ export function adminRouter(app) {
       if (tableId && !q.tableById.get(tableId)) return res.status(400).json({ error: 'Tavolo non valido' });
     }
     const seat = b.seat !== undefined ? cleanText(b.seat, 20) : g.seat;
+    if (g.registered_at && email && email !== g.email) {
+      const other = db
+        .prepare('SELECT name FROM guests WHERE email = ? AND registered_at IS NOT NULL AND id != ?')
+        .get(email, g.id);
+      if (other) return res.status(409).json({ error: `Questa email è già registrata da ${other.name}` });
+    }
     transaction(() => {
       db.prepare('UPDATE guests SET name = ?, name_key = ?, email = ?, table_id = ?, seat = ? WHERE id = ?').run(
         name,

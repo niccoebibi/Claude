@@ -608,12 +608,15 @@ function renderAuth() {
       if (r.needCode) return codeSheet(email, 'Ti sei già registrato con questa email: per sicurezza ti abbiamo inviato un codice.');
       await afterLogin({ onboarding: true });
     } catch (err) {
-      errorToast(err);
+      if (!err.data?.emailTaken) return errorToast(err);
+      const login = await confirmDialog(err.message, { title: 'Email già registrata', ok: 'Accedi', cancel: 'Cambia email' });
+      if (login) loginSheet(email);
+      else f.email.select();
     } finally {
       btn.disabled = false;
     }
   });
-  $('#to-login').addEventListener('click', loginSheet);
+  $('#to-login').addEventListener('click', () => loginSheet());
   $('#admin-login').addEventListener('click', adminLoginSheet);
 }
 
@@ -623,12 +626,12 @@ async function afterLogin(opts) {
   startApp(opts);
 }
 
-function loginSheet() {
+function loginSheet(prefill = '') {
   const { el, close } = sheet(`
     <h3 class="sheet-title">Accedi</h3>
     <p class="sheet-text">Scrivi l'email con cui ti sei registrato.</p>
     <form class="form" id="login-form">
-      <label class="field"><span>Email</span><input name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" required /></label>
+      <label class="field"><span>Email</span><input name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" required value="${esc(prefill)}" /></label>
       <button class="btn primary block">Continua</button>
     </form>`);
   el.querySelector('form').addEventListener('submit', async (e) => {

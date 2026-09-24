@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const KEY = 'wedding-demo-v4';
+  const KEY = 'wedding-demo-v5';
   const DEMO_URL = 'https://www.17aprile2027.it';
   const ACCENTS = {
     salvia: { name: 'Salvia', color: '#6F826A' },
@@ -131,7 +131,7 @@
       msg(6, 16, 'Teresa Ferri', 'text', 'Auguri ragazzi, una giornata perfetta 🌸', null, 95, 6),
     ];
     return {
-      v: 4,
+      v: 5,
       meId: null,
       admin: false,
       pushEnabled: false,
@@ -156,9 +156,9 @@
         coverImage: new URL('img/copertina.jpg', document.baseURI).href,
         coverTone: 'light',
         sections: [
-          { icon: '⛪', title: 'Il momento del sì', subtitle: 'Sabato 17 aprile 2027', body: 'Tutti i dettagli sulla cerimonia sono sul nostro sito.', linkLabel: 'Vedi i dettagli', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/page/il-momento-del-s', image: '' },
-          { icon: '🥂', title: 'Dopo il sì', subtitle: 'Palazzo Brancaccio', body: 'Viale del Monte Oppio 7, Roma\nA due passi dal Colosseo.', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Palazzo+Brancaccio,+Viale+del+Monte+Oppio+7,+Roma', image: 'img/palazzo-brancaccio.jpg' },
-          { icon: '💌', title: 'Conferma la tua presenza', subtitle: 'Entro il 28 febbraio', body: 'Saremmo felici di ricevere la vostra conferma.', linkLabel: 'Conferma (RSVP)', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/rsvp', image: '' },
+          { icon: '⛪', title: 'Il momento del sì', subtitle: 'Sabato 17 aprile 2027', body: 'Basilica dei Santi Giovanni e Paolo al Celio\nPiazza dei Santi Giovanni e Paolo 13, Roma\n\n🅿️ Parcheggio riservato presso la Basilica', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Basilica+dei+Santi+Giovanni+e+Paolo+al+Celio,+Piazza+dei+Santi+Giovanni+e+Paolo+13,+Roma', image: '' },
+          { icon: '🥂', title: 'Dopo il sì', subtitle: 'Palazzo Brancaccio', body: 'Viale del Monte Oppio 7, Roma\n\n🅿️ Parcheggio riservato nel cortile del Palazzo', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Palazzo+Brancaccio,+Viale+del+Monte+Oppio+7,+Roma', image: 'img/palazzo-brancaccio.jpg' },
+          { icon: '💌', title: 'Conferma la tua presenza', subtitle: 'Entro il 31 gennaio', body: 'Saremmo felici di ricevere la vostra conferma.', linkLabel: 'Conferma (RSVP)', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/rsvp', image: '' },
           { icon: '🎁', title: 'Un pensiero per noi', subtitle: 'Lista nozze', body: 'La vostra presenza è il regalo più bello.\nPer chi desidera farci un pensiero: la nostra casa e il nostro viaggio di nozze.', linkLabel: 'Scopri la lista nozze', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/page/un-pensiero-per-noi', image: 'img/lista-nozze.jpg' },
         ],
         mode: 'info',
@@ -166,7 +166,7 @@
         notifyOnLive: true,
         allowPhotos: true,
         allowChat: true,
-        revealAt: rome(2027, 4, 10, 18, 0),
+        revealAt: rome(2027, 4, 17, 18, 45),
         revealAnnounced: false,
         revealMessage: '',
         lastAnnouncement: null,
@@ -185,7 +185,7 @@
   } catch {
     store = null;
   }
-  if (!store || store.v !== 4) store = seed();
+  if (!store || store.v !== 5) store = seed();
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(store));
@@ -539,7 +539,12 @@
       const email = String(b.email || '').trim().toLowerCase();
       if (name.length < 2 || !/\s/.test(name)) return fail(400, 'Scrivi nome e cognome');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, 'Controlla l’indirizzo email');
-      let g = store.guests.find((x) => nameKey(x.name) === nameKey(name));
+      // One registration per email, like the real app.
+      const taken = store.guests.find((x) => x.registered && x.email === email);
+      if (taken && nameKey(taken.name) !== nameKey(name)) {
+        return { status: 409, body: { error: 'Questa email è già stata usata per registrarsi. Usa un indirizzo diverso oppure, se sei tu, accedi.', emailTaken: true } };
+      }
+      let g = taken || store.guests.find((x) => nameKey(x.name) === nameKey(name));
       if (!g) {
         // In the preview newcomers sit at "Trastevere", so the reveal has something to show.
         g = { id: store.nextId.guest++, name, email, tableId: 2, seat: '', registered: true, registeredAt: Date.now(), pushDevices: 0, notifiedAt: null, emailStatus: null };

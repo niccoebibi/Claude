@@ -299,7 +299,13 @@ export function createApp() {
   app.get('/login', (req, res) => {
     const g = req.query.key ? q.guestByToken.get(String(req.query.key)) : null;
     if (g) {
-      if (!g.registered_at) db.prepare('UPDATE guests SET registered_at = ? WHERE id = ?').run(Date.now(), g.id);
+      // Imported guests become registered on their first visit, unless someone already registered
+      // with the same email (a shared family address): they still get in, just not as a new registration.
+      const emailTaken =
+        g.email && db.prepare('SELECT 1 FROM guests WHERE email = ? AND registered_at IS NOT NULL AND id != ?').get(g.email, g.id);
+      if (!g.registered_at && !emailTaken) {
+        db.prepare('UPDATE guests SET registered_at = ? WHERE id = ?').run(Date.now(), g.id);
+      }
       setGuestCookie(req, res, g.token);
     }
     const go = /^[a-z]+$/.test(String(req.query.go || '')) ? `#${req.query.go}` : '';
@@ -331,9 +337,16 @@ export function createApp() {
     if (!email) return res.status(400).json({ error: 'Controlla l’indirizzo email' });
     const key = nameKey(name);
 
+    // One registration per email: the same person logs in again, anyone else needs another address.
     const existing = db
-      .prepare('SELECT * FROM guests WHERE email = ? AND name_key = ? AND registered_at IS NOT NULL')
-      .get(email, key);
+      .prepare('SELECT * FROM guests WHERE email = ? AND registered_at IS NOT NULL ORDER BY id LIMIT 1')
+      .get(email);
+    if (existing && existing.name_key !== key) {
+      return res.status(409).json({
+        error: 'Questa email è già stata usata per registrarsi. Usa un indirizzo diverso oppure, se sei tu, accedi.',
+        emailTaken: true,
+      });
+    }
     if (existing) {
       if (mail.emailEnabled()) {
         await sendLoginCode(email);

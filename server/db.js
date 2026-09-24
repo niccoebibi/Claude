@@ -87,6 +87,15 @@ CREATE TABLE IF NOT EXISTS likes (
 );
 `);
 
+// One registration per email address (a household can share an email only on the imported list).
+try {
+  db.exec(
+    'CREATE UNIQUE INDEX IF NOT EXISTS guests_registered_email ON guests(email) WHERE registered_at IS NOT NULL AND email IS NOT NULL',
+  );
+} catch (err) {
+  console.warn('[db] indice email unica non creato (ci sono già email doppie):', err.message);
+}
+
 export function transaction(fn) {
   db.exec('BEGIN');
   try {

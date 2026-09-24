@@ -148,6 +148,23 @@ test('login with emailed code from another device', async () => {
   assert.equal((await other.get('/api/state')).data.me.name, 'Mario Rossi');
 });
 
+test('an email can be registered only once', async () => {
+  const other = client();
+  const r = await other.post('/api/register', { name: 'Laura Neri', email: 'mario@example.com' });
+  assert.equal(r.status, 409);
+  assert.equal(r.data.emailTaken, true);
+  assert.equal((await other.get('/api/state')).data.me, null, 'not logged in');
+  const same = await other.post('/api/register', { name: 'rossi mario', email: 'MARIO@example.com' });
+  assert.equal(same.data.needCode, true, 'the same person logs in with a code instead');
+  let guests = (await admin.get('/api/admin/guests')).data.guests;
+  assert.equal(guests.filter((g) => g.email === 'mario@example.com' && g.registered).length, 1);
+  const anna = guests.find((g) => g.name === 'Anna Bianchi');
+  const clash = await admin.patch(`/api/admin/guests/${anna.id}`, { email: 'mario@example.com' });
+  assert.equal(clash.status, 409);
+  guests = (await admin.get('/api/admin/guests')).data.guests;
+  assert.equal(guests.find((g) => g.id === anna.id).email, 'anna@example.com');
+});
+
 test('board is closed in info mode and opens in live mode', async () => {
   assert.equal((await mario.get('/api/messages')).status, 403);
   assert.equal((await mario.post('/api/messages', { text: 'ciao' })).status, 403);
