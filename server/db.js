@@ -87,6 +87,11 @@ CREATE TABLE IF NOT EXISTS likes (
 );
 `);
 
+// Columns added after the first release.
+const tableColumns = db.prepare('PRAGMA table_info(seating_tables)').all().map((c) => c.name);
+if (!tableColumns.includes('shape')) db.exec("ALTER TABLE seating_tables ADD COLUMN shape TEXT NOT NULL DEFAULT 'round'");
+if (!tableColumns.includes('seats')) db.exec('ALTER TABLE seating_tables ADD COLUMN seats INTEGER NOT NULL DEFAULT 0');
+
 // One registration per email address (a household can share an email only on the imported list).
 try {
   db.exec(
@@ -171,7 +176,7 @@ export const DEFAULTS = {
   nameFont: 'serif',
   welcomeTitle: 'Benvenuti!',
   welcomeText:
-    "Siamo felicissimi di condividere con voi il giorno più bello della nostra vita.\nQui trovate tutte le informazioni utili: orari, luoghi e qualche sorpresa. Il giorno del matrimonio questa app diventerà la nostra bacheca: condividete foto e messaggi!",
+    "Siamo felicissimi di condividere con voi il giorno più bello della nostra vita.\nQui trovate tutte le informazioni utili: orari, luoghi e qualche sorpresa. Il giorno del matrimonio questa app diventerà la nostra chat LIVE: condividete foto e messaggi!",
   coverImage: null,
   coverTone: 'dark',
   sections: DEFAULT_SECTIONS,
@@ -185,6 +190,8 @@ export const DEFAULTS = {
   revealMessage: '',
   lastAnnouncement: null,
   floorplan: null,
+  // Where the entrance is on the floor plan (percent of width/height): guests see the way to their table.
+  hallEntrance: { x: 10, y: 97 },
   iconVersion: 0,
   customIcon: false,
   adminEmail: '',

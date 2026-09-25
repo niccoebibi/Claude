@@ -487,12 +487,13 @@ export function createApp() {
     const guest = req.guest ? q.guestById.get(req.guest.id) : null;
     if (revealed && guest?.table_id) {
       const t = q.tableById.get(guest.table_id);
-      out.table = { id: t.id, name: t.name, description: t.description, x: t.x, y: t.y };
+      out.table = { id: t.id, name: t.name, description: t.description, x: t.x, y: t.y, shape: t.shape };
       out.seat = guest.seat;
       out.mates = q.tableMates.all(t.id).filter((m) => m.id !== guest.id).map((m) => m.name);
     }
     if (revealed || req.isAdmin) {
-      out.tables = q.allTables.all().map((t) => ({ id: t.id, name: t.name, x: t.x, y: t.y }));
+      out.tables = q.allTables.all().map((t) => ({ id: t.id, name: t.name, x: t.x, y: t.y, shape: t.shape, seats: t.seats }));
+      out.entrance = s.hallEntrance;
     }
     res.json(out);
   });
@@ -503,7 +504,7 @@ export function createApp() {
     LEFT JOIN likes l ON l.message_id = m.id AND l.liker = ?`;
 
   app.get('/api/messages', requireUser, (req, res) => {
-    if (!boardOpen(req)) return res.status(403).json({ error: 'La bacheca non è ancora aperta' });
+    if (!boardOpen(req)) return res.status(403).json({ error: 'La chat LIVE non è ancora aperta' });
     const limit = Math.min(Number(req.query.limit) || 40, 100);
     const before = Number(req.query.before) || Number.MAX_SAFE_INTEGER;
     const after = Number(req.query.after) || 0;
@@ -548,7 +549,7 @@ export function createApp() {
   app.locals.insertMessage = insertMessage;
 
   app.post('/api/messages', requireUser, postLimit, (req, res) => {
-    if (!boardOpen(req)) return res.status(403).json({ error: 'La bacheca non è ancora aperta' });
+    if (!boardOpen(req)) return res.status(403).json({ error: 'La chat LIVE non è ancora aperta' });
     if (!req.isAdmin && !getSettings().allowChat) return res.status(403).json({ error: 'La chat è in pausa' });
     const text = cleanText(req.body?.text, 1000);
     if (!text) return res.status(400).json({ error: 'Scrivi qualcosa' });
@@ -564,7 +565,7 @@ export function createApp() {
       { name: 'thumb', maxCount: 1 },
     ]),
     (req, res) => {
-      if (!boardOpen(req)) return res.status(403).json({ error: 'La bacheca non è ancora aperta' });
+      if (!boardOpen(req)) return res.status(403).json({ error: 'La chat LIVE non è ancora aperta' });
       if (!req.isAdmin && !getSettings().allowPhotos) return res.status(403).json({ error: 'Il caricamento foto è in pausa' });
       const photoFile = req.files?.photo?.[0];
       if (!photoFile) return res.status(400).json({ error: 'Nessuna foto' });
@@ -584,7 +585,7 @@ export function createApp() {
   );
 
   app.post('/api/messages/:id/like', requireUser, (req, res) => {
-    if (!boardOpen(req)) return res.status(403).json({ error: 'La bacheca non è ancora aperta' });
+    if (!boardOpen(req)) return res.status(403).json({ error: 'La chat LIVE non è ancora aperta' });
     const id = Number(req.params.id);
     const m = db.prepare('SELECT id FROM messages WHERE id = ? AND deleted = 0').get(id);
     if (!m) return res.status(404).json({ error: 'Messaggio non trovato' });

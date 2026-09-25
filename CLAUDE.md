@@ -12,10 +12,13 @@
   - ricevimento a **Palazzo Brancaccio**, Viale del Monte Oppio 7, Roma, con parcheggio riservato nel cortile del Palazzo;
   - conferma presenza entro il **31 gennaio**;
   - tavoli svelati **alle 18:45 del 17 aprile**, il giorno stesso delle nozze;
-  - vogliono tutti i testi delle schede **centrati**, e **una sola registrazione per email** (già fatto nell'app).
+  - vogliono tutti i testi delle schede **centrati**, e **una sola registrazione per email** (già fatto nell'app);
+  - la «bacheca» si chiama **Chat LIVE**;
+  - niente emoji su «Il momento del sì» e «Dopo il sì»; per RSVP e lista nozze le icone a linea sottile (`line:busta`, `line:regalo`); corsivi eleganti per i titoli;
+  - **sala:** 19 tavoli, rettangolare, **ingresso in basso a sinistra**, tavolo degli sposi da due **in alto al centro**, gli altri in file. Le posizioni sono provvisorie finché non conferma la wedding planner (si può caricare la sua planimetria come sfondo).
 - **Il loro stile (tema Joy «Cobalt Glaze»):** bianco e blu cobalto `#3d518a`, nomi in corsivo Italianno, disegni a inchiostro blu della chiesa e di Palazzo Brancaccio, monogramma NB. Nell'app: colore `cobalto`, «Stile dei nomi: corsivo», copertina chiara.
 - **Attenzione:** `17aprile.it` NON è loro; era un errore di battitura.
-- **Il progetto:** l'app del loro matrimonio (PWA). Info prima delle nozze, svelamento dei tavoli con notifica ed email, bacheca live con chat e foto, «Regia» per gli sposi. Dettagli nel `README.md`.
+- **Il progetto:** l'app del loro matrimonio (PWA). Info prima delle nozze, svelamento dei tavoli con notifica, email e piantina con il percorso dall'ingresso, Chat LIVE con messaggi e foto, «Regia» per gli sposi. Dettagli nel `README.md`.
 - **Stato:** codice completo e testato (`npm test`). Deve ancora andare online su Render tramite `render.yaml`: il deploy lo fanno gli sposi con il link nel README. Consiglio dato: andare online verso gennaio–febbraio 2027. L'app potrà usare il loro dominio: `www.17aprile2027.it` al posto di Joy, oppure un sottodominio. Da decidere con loro. Se l'app sostituisce Joy, serve aggiungere l'RSVP all'app.
 - **Anteprima interattiva:** `node scripts/build-demo.mjs` genera `demo/dist/`, pubblicata come Artifact su https://claude.ai/artifact/NZez7XRnfGFV2MNQoLMxHk. Le illustrazioni degli sposi vengono scaricate in `demo/assets/`, che non va nel repository pubblico. Dopo ogni modifica all'app, ricostruiscila e ripubblicala.
 - **Repository GitHub pubblico:** non caricarci foto o dati personali degli sposi oltre a quelli già pubblici sul loro sito.

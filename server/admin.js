@@ -82,6 +82,10 @@ const SETTING_RULES = {
   allowChat: Boolean,
   revealAt: isoOrNull,
   revealMessage: (v) => cleanText(v, 1000),
+  hallEntrance: (v) =>
+    v && Number.isFinite(Number(v.x)) && Number.isFinite(Number(v.y))
+      ? { x: Math.max(0, Math.min(100, Number(v.x))), y: Math.max(0, Math.min(100, Number(v.y))) }
+      : null,
   adminEmail: (v) => normEmail(v) || '',
   email: (v) => {
     const old = getSettings().email || DEFAULTS.email;
@@ -171,6 +175,8 @@ function tableRows() {
     x: t.x,
     y: t.y,
     sort: t.sort,
+    shape: t.shape,
+    seats: t.seats,
     guests: guests.filter((g) => g.table_id === t.id).map((g) => ({ id: g.id, name: g.name })),
   }));
 }
@@ -188,6 +194,9 @@ function findOrCreateTable(name) {
   const r = db.prepare('INSERT INTO seating_tables(name, sort) VALUES(?, ?)').run(clean, sort);
   return { id: Number(r.lastInsertRowid), created: true };
 }
+
+const tableShape = (v) => (v === 'rect' ? 'rect' : 'round');
+const tableSeats = (v) => Math.max(0, Math.min(30, Math.round(Number(v) || 0)));
 
 const slug = (s) =>
   String(s || '')
@@ -345,11 +354,60 @@ export function adminRouter(app) {
     const name = cleanText(req.body?.name, 80);
     if (!name) return res.status(400).json({ error: 'Dai un nome al tavolo' });
     const sort = count('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM seating_tables');
-    db.prepare('INSERT INTO seating_tables(name, description, sort) VALUES(?, ?, ?)').run(
+    db.prepare('INSERT INTO seating_tables(name, description, sort, shape, seats) VALUES(?, ?, ?, ?, ?)').run(
       name,
       cleanText(req.body?.description, 300),
       sort,
+      tableShape(req.body?.shape),
+      tableSeats(req.body?.seats),
     );
+    res.json({ tables: tableRows() });
+  });
+
+  // Several numbered tables at once, optionally with the couple's table.
+  r.post('/tables/bulk', (req, res) => {
+    const n = Math.max(0, Math.min(60, Math.round(Number(req.body?.count) || 0)));
+    const prefix = cleanText(req.body?.prefix, 40) || 'Tavolo';
+    const seats = tableSeats(req.body?.seats);
+    const insert = db.prepare('INSERT INTO seating_tables(name, sort, shape, seats) VALUES(?, ?, ?, ?)');
+    transaction(() => {
+      if (req.body?.couple && !db.prepare("SELECT 1 FROM seating_tables WHERE shape = 'rect' OR lower(name) LIKE '%spos%'").get()) {
+        db.prepare('UPDATE seating_tables SET sort = sort + 1').run();
+        insert.run('Sposi', 0, 'rect', 2);
+      }
+      const names = new Set(q.allTables.all().map((t) => t.name.toLowerCase()));
+      let sort = count('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM seating_tables');
+      for (let i = 1, made = 0; made < n; i++) {
+        const name = `${prefix} ${i}`;
+        if (names.has(name.toLowerCase())) continue;
+        insert.run(name, sort++, 'round', seats);
+        made++;
+      }
+    });
+    res.json({ tables: tableRows() });
+  });
+
+  // Couple's table at the top centre, everyone else in rows below it.
+  r.post('/tables/arrange', (req, res) => {
+    const all = q.allTables.all();
+    const isCouple = (t) => t.shape === 'rect' || /spos/i.test(t.name);
+    const couple = all.filter(isCouple);
+    const others = all.filter((t) => !isCouple(t));
+    const set = db.prepare('UPDATE seating_tables SET x = ?, y = ? WHERE id = ?');
+    const round1 = (v) => Math.round(v * 10) / 10;
+    transaction(() => {
+      couple.forEach((t, i) => set.run(round1(50 + (i - (couple.length - 1) / 2) * 22), 13, t.id));
+      const cols = others.length <= 4 ? Math.max(1, others.length) : Math.ceil(Math.sqrt(others.length * 2));
+      const rows = Math.max(1, Math.ceil(others.length / cols));
+      others.forEach((t, i) => {
+        const r0 = Math.floor(i / cols);
+        const inRow = Math.min(cols, others.length - r0 * cols);
+        const c = i % cols;
+        const x = 12 + ((c + 0.5) * 76) / cols + ((cols - inRow) * 76) / cols / 2;
+        const y = rows === 1 ? 55 : 35 + (r0 * 48) / (rows - 1);
+        set.run(round1(x), round1(y), t.id);
+      });
+    });
     res.json({ tables: tableRows() });
   });
 
@@ -358,12 +416,14 @@ export function adminRouter(app) {
     if (!t) return res.status(404).json({ error: 'Tavolo non trovato' });
     const b = req.body || {};
     const coord = (v, old) => (v === null ? null : v === undefined ? old : Math.max(0, Math.min(100, Number(v) || 0)));
-    db.prepare('UPDATE seating_tables SET name = ?, description = ?, x = ?, y = ?, sort = ? WHERE id = ?').run(
+    db.prepare('UPDATE seating_tables SET name = ?, description = ?, x = ?, y = ?, sort = ?, shape = ?, seats = ? WHERE id = ?').run(
       b.name !== undefined ? cleanText(b.name, 80) || t.name : t.name,
       b.description !== undefined ? cleanText(b.description, 300) : t.description,
       coord(b.x, t.x),
       coord(b.y, t.y),
       b.sort !== undefined ? Number(b.sort) || 0 : t.sort,
+      b.shape !== undefined ? tableShape(b.shape) : t.shape,
+      b.seats !== undefined ? tableSeats(b.seats) : t.seats,
       t.id,
     );
     res.json({ tables: tableRows() });
@@ -442,6 +502,26 @@ export function adminRouter(app) {
   r.delete('/guests/:id', (req, res) => {
     db.prepare('DELETE FROM guests WHERE id = ?').run(Number(req.params.id));
     res.json({ guests: guestRows() });
+  });
+
+  // Put several guests at one table (or take them off any table with tableId null).
+  r.post('/guests/assign', (req, res) => {
+    const ids = Array.isArray(req.body?.guestIds) ? req.body.guestIds.map(Number).filter(Boolean) : [];
+    const tableId = Number(req.body?.tableId) || null;
+    if (tableId && !q.tableById.get(tableId)) return res.status(400).json({ error: 'Tavolo non valido' });
+    const changed = [];
+    transaction(() => {
+      for (const id of ids) {
+        const g = q.guestById.get(id);
+        if (!g || g.table_id === tableId) continue;
+        db.prepare('UPDATE guests SET table_id = ? WHERE id = ?').run(tableId, id);
+        resetNotification.run(id);
+        changed.push(id);
+      }
+    });
+    hub.broadcastToGuests(changed, 'seating', {});
+    worker.kick();
+    res.json({ changed: changed.length, guests: guestRows(), tables: tableRows() });
   });
 
   r.post('/guests/:id/resend', (req, res) => {

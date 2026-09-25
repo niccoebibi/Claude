@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const KEY = 'wedding-demo-v6';
+  const KEY = 'wedding-demo-v7';
   const DEMO_URL = 'https://www.17aprile2027.it';
   const ACCENTS = {
     salvia: { name: 'Salvia', color: '#6F826A' },
@@ -68,24 +68,50 @@
   /* Seed data                                                         */
   /* ---------------------------------------------------------------- */
 
+  function arrangeTables(list) {
+    const isCouple = (t) => t.shape === 'rect' || /spos/i.test(t.name);
+    const couple = list.filter(isCouple);
+    const others = list.filter((t) => !isCouple(t));
+    const r1 = (v) => Math.round(v * 10) / 10;
+    couple.forEach((t, i) => Object.assign(t, { x: r1(50 + (i - (couple.length - 1) / 2) * 22), y: 13 }));
+    const cols = others.length <= 4 ? Math.max(1, others.length) : Math.ceil(Math.sqrt(others.length * 2));
+    const rows = Math.max(1, Math.ceil(others.length / cols));
+    others.forEach((t, i) => {
+      const r0 = Math.floor(i / cols);
+      const inRow = Math.min(cols, others.length - r0 * cols);
+      const x = 12 + (((i % cols) + 0.5) * 76) / cols + ((cols - inRow) * 76) / cols / 2;
+      const y = rows === 1 ? 55 : 35 + (r0 * 48) / (rows - 1);
+      Object.assign(t, { x: r1(x), y: r1(y) });
+    });
+    return list;
+  }
+
   function seed() {
     const t = Date.now();
-    const tables = [
-      { id: 1, name: 'Sposi', description: 'Il tavolo degli sposi e dei testimoni, di fronte alla sala', x: 50, y: 14 },
-      { id: 2, name: 'Trastevere', description: 'Vicino alle vetrate, lato giardino', x: 20, y: 42 },
-      { id: 3, name: 'Monti', description: 'Al centro del salone, sotto il lampadario', x: 50, y: 46 },
-      { id: 4, name: 'Aventino', description: 'Accanto alla pista da ballo', x: 80, y: 42 },
-      { id: 5, name: 'Testaccio', description: "Vicino all'ingresso", x: 30, y: 78 },
-      { id: 6, name: 'Gianicolo', description: 'Accanto al camino', x: 70, y: 78 },
-    ].map((x, i) => ({ ...x, sort: i + 1 }));
-    const people = [
-      ['Niccolò', 1], ['Beatrice', 1], ['Anna Conti', 1], ['Paolo Ferri', 1], ['Laura Galli', 1], ['Roberto Neri', 1],
-      ['Sara Galli', 2], ['Luca Bianchi', 2], ['Chiara Moretti', 2], ['Davide Moretti', 2], ['Elena Russo', 2],
-      ['Carla Conti', 3], ['Franco Conti', 3], ['Rosa Esposito', 3], ['Giovanni Esposito', 3], ['Teresa Ferri', 3], ['Mario Ferri', 3],
-      ['Federica Rinaldi', 4], ['Alessandro Rinaldi', 4], ['Martina Colombo', 4], ['Simone Colombo', 4], ['Giorgia Marino', 4],
-      ['Andrea Greco', 5], ['Valentina Greco', 5], ['Stefano Bruno', 5], ['Francesca Bruno', 5], ['Matteo Costa', 5],
-      ['Silvia Fontana', 6], ['Riccardo Fontana', 6], ['Beatrice Lombardi', 6], ['Tommaso Lombardi', 6], ['Irene Barbieri', 6],
-    ];
+    // 19 tables like the real hall: the couple's table for two at the top centre, 18 round tables in rows.
+    const tables = [{ id: 1, name: 'Sposi', description: 'Il tavolo degli sposi', shape: 'rect', seats: 2, sort: 1 }];
+    for (let n = 1; n <= 18; n++) {
+      tables.push({ id: n + 1, name: `Tavolo ${n}`, description: '', shape: 'round', seats: 8, sort: n + 1 });
+    }
+    arrangeTables(tables);
+    const first = ['Anna', 'Luca', 'Sara', 'Marco', 'Chiara', 'Paolo', 'Elena', 'Davide', 'Giulia', 'Matteo', 'Laura', 'Andrea', 'Francesca', 'Stefano', 'Valentina', 'Alessandro', 'Martina', 'Simone', 'Federica', 'Riccardo', 'Silvia', 'Tommaso', 'Irene', 'Giorgio', 'Camilla', 'Lorenzo', 'Alice', 'Filippo', 'Marta', 'Edoardo'];
+    const last = ['Rossi', 'Bianchi', 'Conti', 'Ferri', 'Galli', 'Moretti', 'Russo', 'Esposito', 'Rinaldi', 'Colombo', 'Marino', 'Greco', 'Bruno', 'Costa', 'Fontana', 'Lombardi', 'Barbieri', 'Neri', 'Ricci', 'Gallo', 'Leone', 'Longo', 'Mancini', 'Serra', 'Villa', 'Caruso', 'Ferrara', 'De Luca'];
+    const people = [['Niccolò', 1], ['Beatrice', 1]];
+    const used = new Set();
+    let k = 0;
+    for (let tIdx = 2; tIdx <= 19; tIdx++) {
+      // Table 7 keeps a free seat for whoever registers in the preview.
+      const size = tIdx === 8 ? 7 : 8;
+      for (let j = 0; j < size; j++) {
+        let name;
+        do {
+          name = `${first[(k * 7 + 3) % first.length]} ${last[(k * 11 + 5) % last.length]}`;
+          k++;
+        } while (used.has(name));
+        used.add(name);
+        people.push([name, tIdx]);
+      }
+    }
     const guests = people.map(([name, tableId], i) => ({
       id: i + 1,
       name,
@@ -93,7 +119,7 @@
       tableId,
       seat: '',
       registered: i % 4 !== 3,
-      registeredAt: t - (40 - i) * 86400000,
+      registeredAt: t - (160 - i) * 3600000,
       pushDevices: i % 3 === 0 ? 0 : 1,
       notifiedAt: null,
       emailStatus: null,
@@ -131,12 +157,12 @@
       msg(6, 16, 'Teresa Ferri', 'text', 'Auguri ragazzi, una giornata perfetta 🌸', null, 95, 6),
     ];
     return {
-      v: 6,
+      v: 7,
       meId: null,
       admin: false,
       pushEnabled: false,
       startHash: '',
-      nextId: { guest: 100, table: 10, msg: 100 },
+      nextId: { guest: 1000, table: 100, msg: 100 },
       scriptStep: 0,
       spare: photos.slice(3),
       tables,
@@ -156,10 +182,10 @@
         coverImage: new URL('img/copertina.jpg', document.baseURI).href,
         coverTone: 'light',
         sections: [
-          { icon: '⛪', title: 'Il momento del sì', subtitle: 'Sabato 17 aprile 2027 · ore 17:00', body: 'Basilica dei Santi Giovanni e Paolo al Celio\nPiazza dei Santi Giovanni e Paolo 13, Roma\n\n🅿️ Parcheggio riservato presso la Basilica', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Basilica+dei+Santi+Giovanni+e+Paolo+al+Celio,+Piazza+dei+Santi+Giovanni+e+Paolo+13,+Roma', image: '' },
-          { icon: '🥂', title: 'Dopo il sì', subtitle: 'Palazzo Brancaccio', body: 'Viale del Monte Oppio 7, Roma\n\n🅿️ Parcheggio riservato nel cortile del Palazzo', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Palazzo+Brancaccio,+Viale+del+Monte+Oppio+7,+Roma', image: 'img/palazzo-brancaccio.jpg' },
-          { icon: '💌', title: 'Conferma la tua presenza', subtitle: 'Entro il 31 gennaio', body: 'Saremmo felici di ricevere la vostra conferma.', linkLabel: 'Conferma (RSVP)', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/rsvp', image: '' },
-          { icon: '🎁', title: 'Un pensiero per noi', subtitle: 'Lista nozze', body: 'La vostra presenza è il regalo più bello.\nPer chi desidera farci un pensiero: la nostra casa e il nostro viaggio di nozze.', linkLabel: 'Scopri la lista nozze', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/page/un-pensiero-per-noi', image: 'img/lista-nozze.jpg' },
+          { icon: '', title: 'Il momento del sì', subtitle: 'Sabato 17 aprile 2027 · ore 17:00', body: 'Basilica dei Santi Giovanni e Paolo al Celio\nPiazza dei Santi Giovanni e Paolo 13, Roma\n\n🅿️ Parcheggio riservato presso la Basilica', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Basilica+dei+Santi+Giovanni+e+Paolo+al+Celio,+Piazza+dei+Santi+Giovanni+e+Paolo+13,+Roma', image: '' },
+          { icon: '', title: 'Dopo il sì', subtitle: 'Palazzo Brancaccio', body: 'Viale del Monte Oppio 7, Roma\n\n🅿️ Parcheggio riservato nel cortile del Palazzo', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Palazzo+Brancaccio,+Viale+del+Monte+Oppio+7,+Roma', image: 'img/palazzo-brancaccio.jpg' },
+          { icon: 'line:busta', title: 'Conferma la tua presenza', subtitle: 'Entro il 31 gennaio', body: 'Saremmo felici di ricevere la vostra conferma.', linkLabel: 'Conferma (RSVP)', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/rsvp', image: '' },
+          { icon: 'line:regalo', title: 'Un pensiero per noi', subtitle: 'Lista nozze', body: 'La vostra presenza è il regalo più bello.\nPer chi desidera farci un pensiero: la nostra casa e il nostro viaggio di nozze.', linkLabel: 'Scopri la lista nozze', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/page/un-pensiero-per-noi', image: 'img/lista-nozze.jpg' },
         ],
         mode: 'info',
         autoLiveAt: null,
@@ -171,6 +197,7 @@
         revealMessage: '',
         lastAnnouncement: null,
         floorplan: null,
+        hallEntrance: { x: 10, y: 97 },
         iconVersion: 0,
         customIcon: false,
         adminEmail: 'sposi@gmail.com',
@@ -185,7 +212,7 @@
   } catch {
     store = null;
   }
-  if (!store || store.v !== 6) store = seed();
+  if (!store || store.v !== 7) store = seed();
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(store));
@@ -451,7 +478,7 @@
     save();
     broadcast('settings', publicSettings());
     if (mode === 'live' && prev !== 'live') {
-      if (notify) fakePush('📸 La bacheca è aperta!', 'Condividi foto e messaggi in diretta con tutti gli invitati.', 'bacheca');
+      if (notify) fakePush('📸 La chat LIVE è aperta!', 'Condividi foto e messaggi in diretta con tutti gli invitati.', 'bacheca');
       scheduleActivity();
     }
   }
@@ -546,8 +573,8 @@
       }
       let g = taken || store.guests.find((x) => nameKey(x.name) === nameKey(name));
       if (!g) {
-        // In the preview newcomers sit at "Trastevere", so the reveal has something to show.
-        g = { id: store.nextId.guest++, name, email, tableId: 2, seat: '', registered: true, registeredAt: Date.now(), pushDevices: 0, notifiedAt: null, emailStatus: null };
+        // In the preview newcomers sit at "Tavolo 7", so the reveal has something to show.
+        g = { id: store.nextId.guest++, name, email, tableId: 8, seat: '', registered: true, registeredAt: Date.now(), pushDevices: 0, notifiedAt: null, emailStatus: null };
         store.guests.push(g);
       }
       Object.assign(g, { email, registered: true, registeredAt: Date.now() });
@@ -598,16 +625,19 @@
       const g = me();
       if (revealed && g?.tableId) {
         const t = table(g.tableId);
-        out.table = { id: t.id, name: t.name, description: t.description, x: t.x, y: t.y };
+        out.table = { id: t.id, name: t.name, description: t.description, x: t.x, y: t.y, shape: t.shape };
         out.seat = g.seat;
         out.mates = store.guests.filter((x) => x.tableId === t.id && x.id !== g.id).map((x) => x.name).sort();
       }
-      if (revealed || store.admin) out.tables = tableRows().map(({ id, name, x, y }) => ({ id, name, x, y }));
+      if (revealed || store.admin) {
+        out.tables = tableRows().map(({ id, name, x, y, shape, seats }) => ({ id, name, x, y, shape, seats }));
+        out.entrance = S().hallEntrance;
+      }
       return out;
     }],
 
     ['GET', /^\/api\/messages$/, (b, q) => {
-      if (!boardOpen()) return fail(403, 'La bacheca non è ancora aperta');
+      if (!boardOpen()) return fail(403, 'La chat LIVE non è ancora aperta');
       const limit = Math.min(Number(q.get('limit')) || 40, 100);
       const before = Number(q.get('before')) || Infinity;
       const after = Number(q.get('after')) || 0;
@@ -621,7 +651,7 @@
     ['POST', /^\/api\/messages$/, (b) => {
       const nu = needUser();
       if (nu) return nu;
-      if (!boardOpen()) return fail(403, 'La bacheca non è ancora aperta');
+      if (!boardOpen()) return fail(403, 'La chat LIVE non è ancora aperta');
       const text = String(b.text || '').trim().slice(0, 1000);
       if (!text) return fail(400, 'Scrivi qualcosa');
       return { message: insertMessage({ ...author(), kind: 'text', text }) };
@@ -678,7 +708,7 @@
 
     ['PATCH', /^\/api\/admin\/settings$/, (b) => {
       const s = S();
-      const keys = ['coupleNames', 'weddingDate', 'tz', 'accent', 'nameFont', 'coverTone', 'welcomeTitle', 'welcomeText', 'sections', 'autoLiveAt', 'notifyOnLive', 'allowPhotos', 'allowChat', 'revealAt', 'revealMessage', 'adminEmail'];
+      const keys = ['hallEntrance', 'coupleNames', 'weddingDate', 'tz', 'accent', 'nameFont', 'coverTone', 'welcomeTitle', 'welcomeText', 'sections', 'autoLiveAt', 'notifyOnLive', 'allowPhotos', 'allowChat', 'revealAt', 'revealMessage', 'adminEmail'];
       for (const k of keys) if (k in b) s[k] = b[k];
       if (!s.coupleNames) s.coupleNames = 'Niccolò & Beatrice';
       if (b.email) s.email = { ...s.email, ...b.email, pass: b.email.pass || s.email.pass };
@@ -728,7 +758,39 @@
     ['POST', /^\/api\/admin\/tables$/, (b) => {
       const name = String(b.name || '').trim();
       if (!name) return fail(400, 'Dai un nome al tavolo');
-      store.tables.push({ id: store.nextId.table++, name, description: String(b.description || ''), x: null, y: null, sort: store.tables.length + 1 });
+      store.tables.push({
+        id: store.nextId.table++,
+        name,
+        description: String(b.description || ''),
+        x: null,
+        y: null,
+        sort: store.tables.length + 1,
+        shape: b.shape === 'rect' ? 'rect' : 'round',
+        seats: Math.max(0, Math.min(30, Number(b.seats) || 0)),
+      });
+      save();
+      return { tables: tableRows() };
+    }],
+    ['POST', /^\/api\/admin\/tables\/bulk$/, (b) => {
+      const n = Math.max(0, Math.min(60, Number(b.count) || 0));
+      const prefix = String(b.prefix || 'Tavolo').trim() || 'Tavolo';
+      const seats = Math.max(0, Math.min(30, Number(b.seats) || 0));
+      if (b.couple && !store.tables.some((t) => t.shape === 'rect' || /spos/i.test(t.name))) {
+        store.tables.forEach((t) => t.sort++);
+        store.tables.push({ id: store.nextId.table++, name: 'Sposi', description: '', x: null, y: null, sort: 0, shape: 'rect', seats: 2 });
+      }
+      const names = new Set(store.tables.map((t) => t.name.toLowerCase()));
+      for (let i = 1, made = 0; made < n; i++) {
+        const name = `${prefix} ${i}`;
+        if (names.has(name.toLowerCase())) continue;
+        store.tables.push({ id: store.nextId.table++, name, description: '', x: null, y: null, sort: store.tables.length + 1, shape: 'round', seats });
+        made++;
+      }
+      save();
+      return { tables: tableRows() };
+    }],
+    ['POST', /^\/api\/admin\/tables\/arrange$/, () => {
+      arrangeTables([...store.tables].sort((a, b2) => a.sort - b2.sort));
       save();
       return { tables: tableRows() };
     }],
@@ -747,6 +809,8 @@
       if (b.description !== undefined) t.description = String(b.description);
       if (b.x !== undefined) t.x = b.x;
       if (b.y !== undefined) t.y = b.y;
+      if (b.shape !== undefined) t.shape = b.shape === 'rect' ? 'rect' : 'round';
+      if (b.seats !== undefined) t.seats = Math.max(0, Math.min(30, Number(b.seats) || 0));
       save();
       return { tables: tableRows() };
     }],
@@ -785,6 +849,20 @@
       }
       save();
       return { ...res, guests: guestRows(), tables: tableRows() };
+    }],
+    ['POST', /^\/api\/admin\/guests\/assign$/, (b) => {
+      const tableId = Number(b.tableId) || null;
+      let changed = 0;
+      for (const id of b.guestIds || []) {
+        const g = store.guests.find((x) => x.id === Number(id));
+        if (!g || g.tableId === tableId) continue;
+        g.tableId = tableId;
+        resetNotice(g);
+        changed++;
+      }
+      save();
+      broadcast('seating', {});
+      return { changed, guests: guestRows(), tables: tableRows() };
     }],
     ['POST', /^\/api\/admin\/guests\/(\d+)\/resend$/, (b, q, m) => {
       const g = store.guests.find((x) => x.id === Number(m[1]));

@@ -4,7 +4,7 @@ Un'unica app, che gli invitati aprono da un link o da un QR code (nessun App Sto
 
 - **Prima del matrimonio:** informazioni (cerimonia, ricevimento, programma, dress code, lista nozze, contatti) e conto alla rovescia.
 - **Svelamento dei tavoli:** all'ora che scegliete, ogni invitato riceve una **notifica sul telefono** e un'**email** con il suo tavolo, il posto, chi siede con lui e la piantina della sala con il suo tavolo evidenziato.
-- **Il giorno del matrimonio:** con un tasto la trasformate in una **bacheca live**: chat e foto in diretta, cuoricini, galleria, annunci degli sposi e uno **schermo per il proiettore**.
+- **Il giorno del matrimonio:** con un tasto la trasformate nella **chat LIVE**: messaggi e foto in diretta, cuoricini, galleria, annunci degli sposi e uno **schermo per il proiettore**.
 - **Dopo:** scaricate tutte le foto e i messaggi in un file .zip.
 
 Tutto si gestisce dalla **Regia**, il pannello degli sposi dentro l'app.
@@ -49,7 +49,7 @@ Non c'è niente da scaricare dagli store: basta aprire il link o inquadrare il Q
 
 ## 4. Il giorno del matrimonio
 
-- In Regia toccate **Bacheca live** (oppure programmate l'apertura automatica a un orario). Tutti ricevono una notifica e l'app si trasforma in chat e foto.
+- In Regia toccate **Chat LIVE** (oppure programmate l'apertura automatica a un orario). Tutti ricevono una notifica e l'app si trasforma in chat e foto.
 - **Annuncio a tutti:** per esempio «Tra 10 minuti il taglio della torta!». Arriva come notifica, compare nell'app e, se volete, anche via email.
 - **Schermo per proiettore:** apritelo da un computer collegato a un proiettore o a una TV. Mostra le foto a rotazione, le nuove appena arrivano, i messaggi e il QR code per partecipare.
 - Potete eliminare qualsiasi foto o messaggio (icona del cestino), oppure mettere in pausa foto e chat.

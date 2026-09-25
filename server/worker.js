@@ -14,7 +14,7 @@ export async function setMode(mode, notify) {
   hub.broadcast('settings', publicSettings());
   if (mode === 'live' && prev !== 'live' && notify) {
     await push.sendToAll({
-      title: `📸 La bacheca di ${getSettings().coupleNames} è aperta!`,
+      title: `📸 La chat LIVE di ${getSettings().coupleNames} è aperta!`,
       body: 'Condividi foto e messaggi in diretta con tutti gli invitati.',
       url: '/#bacheca',
       tag: 'live',

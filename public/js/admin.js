@@ -18,6 +18,8 @@ import {
   confirmDialog,
   copyText,
   ACCENTS,
+  LINE_ICONS,
+  cardIcon,
 } from './util.js';
 
 let ctx; // helpers from app.js (state, router, shared views)
@@ -74,20 +76,20 @@ async function adminHome(main) {
         <h3 class="card-title">Modalità dell'app</h3>
         <div class="segmented" role="group">
           <button data-mode="info" class="${live ? '' : 'on'}">${icon('info')} Informazioni</button>
-          <button data-mode="live" class="${live ? 'on' : ''}"><span class="live-dot"></span> Bacheca live</button>
+          <button data-mode="live" class="${live ? 'on' : ''}"><span class="live-dot"></span> Chat LIVE</button>
         </div>
         <p class="small muted">${
           live
-            ? 'Gli invitati vedono la <b>bacheca</b> con chat e foto in diretta. Le informazioni restano disponibili nella scheda «Info».'
-            : 'Gli invitati vedono le <b>informazioni</b> sul matrimonio. Quando vuoi, attiva la bacheca live con un tocco.'
+            ? 'Gli invitati vedono la <b>chat LIVE</b> con messaggi e foto in diretta. Le informazioni restano disponibili nella scheda «Info».'
+            : 'Gli invitati vedono le <b>informazioni</b> sul matrimonio. Quando vuoi, apri la chat LIVE con un tocco.'
         }</p>
-        <label class="switch-row"><input type="checkbox" id="notifyOnLive" ${s.notifyOnLive ? 'checked' : ''}/> <span>Avvisa tutti con una notifica quando apro la bacheca</span></label>
+        <label class="switch-row"><input type="checkbox" id="notifyOnLive" ${s.notifyOnLive ? 'checked' : ''}/> <span>Avvisa tutti con una notifica quando apro la chat LIVE</span></label>
         ${
           live
             ? ''
             : s.autoLiveAt
-              ? `<div class="note">${icon('clock')} La bacheca si aprirà da sola <b>${esc(fmtDateTime(s.autoLiveAt, tz()))}</b> <button class="link" id="auto-cancel">Annulla</button></div>`
-              : `<details class="more"><summary>Apri la bacheca automaticamente a un orario</summary>
+              ? `<div class="note">${icon('clock')} La chat LIVE si aprirà da sola <b>${esc(fmtDateTime(s.autoLiveAt, tz()))}</b> <button class="link" id="auto-cancel">Annulla</button></div>`
+              : `<details class="more"><summary>Apri la chat LIVE automaticamente a un orario</summary>
                   <div class="inline-form"><input type="datetime-local" id="autoLiveAt" /><button class="btn small primary" id="auto-save">Programma</button></div>
                 </details>`
         }
@@ -146,7 +148,7 @@ async function adminHome(main) {
           <label class="field"><span>Titolo</span><input name="title" maxlength="120" placeholder="Es. Tra 10 minuti il taglio della torta!" /></label>
           <label class="field"><span>Messaggio</span><textarea name="text" rows="3" maxlength="2000" required placeholder="Es. Vi aspettiamo tutti in giardino 🎂"></textarea></label>
           <label class="switch-row"><input type="checkbox" name="push" checked/> <span>Notifica sul telefono</span></label>
-          <label class="switch-row"><input type="checkbox" name="post" checked/> <span>Pubblica in bacheca</span></label>
+          <label class="switch-row"><input type="checkbox" name="post" checked/> <span>Pubblica nella chat LIVE</span></label>
           <label class="switch-row"><input type="checkbox" name="email"/> <span>Invia anche per email</span></label>
           <button class="btn primary">${icon('send')} Invia annuncio</button>
         </form>
@@ -202,14 +204,14 @@ async function adminHome(main) {
         if (mode === O.settings.mode) return;
         const ok = await confirmDialog(
           mode === 'live'
-            ? `Aprire la bacheca live a tutti gli invitati?${O.settings.notifyOnLive ? '\nRiceveranno una notifica.' : ''}`
-            : 'Tornare alla modalità informazioni? La bacheca verrà nascosta agli invitati (foto e messaggi restano salvati).',
-          { ok: mode === 'live' ? 'Apri la bacheca' : 'Torna alle info' },
+            ? `Aprire la chat LIVE a tutti gli invitati?${O.settings.notifyOnLive ? '\nRiceveranno una notifica.' : ''}`
+            : 'Tornare alla modalità informazioni? La chat LIVE verrà nascosta agli invitati (foto e messaggi restano salvati).',
+          { ok: mode === 'live' ? 'Apri la chat LIVE' : 'Torna alle info' },
         );
         if (!ok) return;
         await api('/api/admin/mode', { method: 'POST', body: { mode, notify: O.settings.notifyOnLive } });
         await ctx.refreshState();
-        toast(mode === 'live' ? 'Bacheca live aperta! 🎉' : 'Modalità informazioni');
+        toast(mode === 'live' ? 'Chat LIVE aperta! 🎉' : 'Modalità informazioni');
         await reload();
       } else if (t.id === 'auto-save') {
         const v = $('#autoLiveAt', main).value;
@@ -504,53 +506,190 @@ async function adminGuests(main, args) {
 
   /* ---------- Tables ---------- */
 
+  const isCoupleTable = (t) => t.shape === 'rect' || /spos/i.test(t.name);
+
+  function tableCard(t, i) {
+    const n = t.guests.length;
+    const over = t.seats && n > t.seats;
+    return `
+      <div class="table-row card" data-id="${t.id}">
+        <div class="t-main">
+          <div class="t-name">${esc(t.name)} <span class="tag">${t.shape === 'rect' ? 'rettangolare' : 'rotondo'}</span></div>
+          <div class="t-count ${over ? 'over' : ''}">${
+            t.seats ? `${n} / ${t.seats} posti occupati${over ? ' · troppe persone' : ''}` : `${n} ${n === 1 ? 'persona' : 'persone'}`
+          }</div>
+          ${t.description ? `<div class="small">${esc(t.description)}</div>` : ''}
+          <div class="t-guests">${
+            t.guests.map((g) => `<span class="name-chip">${esc(g.name)}</span>`).join('') ||
+            '<span class="muted small">Nessuno ancora</span>'
+          }</div>
+          <button class="btn small outline" data-assign>${icon('users')} Assegna persone</button>
+        </div>
+        <div class="t-actions">
+          <button class="icon-btn" data-up ${i === 0 ? 'disabled' : ''} aria-label="Su">${icon('up')}</button>
+          <button class="icon-btn" data-down ${i === tables.length - 1 ? 'disabled' : ''} aria-label="Giù">${icon('down')}</button>
+          <button class="icon-btn" data-edit aria-label="Modifica">${icon('edit')}</button>
+          <button class="icon-btn" data-del aria-label="Elimina">${icon('trash')}</button>
+        </div>
+      </div>`;
+  }
+
   function tablesPane() {
     resetPane();
+    const seatsTotal = tables.reduce((sum, t) => sum + (t.seats || 0), 0);
+    const assigned = guests.filter((g) => g.tableId).length;
+    const unassigned = guests.length - assigned;
+    const hasCouple = tables.some(isCoupleTable);
     pane.innerHTML = `
-      <form class="card form" id="add-table">
-        <h3 class="card-title small-title">Nuovo tavolo</h3>
-        <label class="field"><span>Nome</span><input name="name" required placeholder="Es. Tavolo Positano, Tavolo 1…" /></label>
-        <label class="field"><span>Descrizione (facoltativa)</span><input name="description" placeholder="Es. Vicino alla vetrata, lato giardino" /></label>
-        <button class="btn primary">${icon('plus')} Aggiungi tavolo</button>
-      </form>
-      <div class="table-list">${
+      <div class="seat-summary">
+        <div class="stat"><b>${tables.length}</b><span>tavoli</span></div>
+        <div class="stat"><b>${seatsTotal || '–'}</b><span>posti</span></div>
+        <div class="stat"><b>${assigned}</b><span>assegnati</span></div>
+        <div class="stat ${unassigned ? 'warn' : ''}"><b>${unassigned}</b><span>senza tavolo</span></div>
+      </div>
+
+      <details class="card fold" ${tables.length ? '' : 'open'}>
+        <summary>${icon('plus')} Crea più tavoli insieme</summary>
+        <form class="form" id="bulk">
+          <div class="field-row">
+            <label class="field narrow"><span>Quanti</span><input name="count" type="number" min="1" max="60" value="${tables.length ? 1 : 18}" required /></label>
+            <label class="field"><span>Nome</span><input name="prefix" value="Tavolo" required /></label>
+            <label class="field narrow"><span>Posti</span><input name="seats" type="number" min="0" max="30" value="8" /></label>
+          </div>
+          ${hasCouple ? '' : '<label class="switch-row"><input type="checkbox" name="couple" checked /> <span>Aggiungi anche il tavolo degli sposi (rettangolare, da 2)</span></label>'}
+          <p class="small muted">Verranno numerati (Tavolo 1, Tavolo 2…) e disposti in sala automaticamente: potrete spostarli nella scheda Piantina.</p>
+          <button class="btn primary">${icon('plus')} Crea tavoli</button>
+        </form>
+      </details>
+
+      <details class="card fold">
+        <summary>${icon('plus')} Aggiungi un tavolo singolo</summary>
+        <form class="form" id="add-table">
+          <label class="field"><span>Nome</span><input name="name" required placeholder="Es. Tavolo 19, Tavolo dei testimoni…" /></label>
+          <div class="field-row">
+            <label class="field"><span>Forma</span><select name="shape"><option value="round">Rotondo</option><option value="rect">Rettangolare</option></select></label>
+            <label class="field narrow"><span>Posti</span><input name="seats" type="number" min="0" max="30" value="8" /></label>
+          </div>
+          <button class="btn primary">${icon('plus')} Aggiungi</button>
+        </form>
+      </details>
+
+      ${
         tables.length
-          ? tables
-              .map(
-                (t, i) => `
-        <div class="table-row card" data-id="${t.id}">
-          <div class="t-main">
-            <div class="t-name">${esc(t.name)} <span class="muted small">· ${t.guests.length} ${t.guests.length === 1 ? 'persona' : 'persone'}</span></div>
-            ${t.description ? `<div class="small">${esc(t.description)}</div>` : ''}
-            <div class="small muted">${t.guests.map((g) => esc(g.name)).join(', ') || 'Nessun invitato assegnato'}</div>
-          </div>
-          <div class="t-actions">
-            <button class="icon-btn" data-up ${i === 0 ? 'disabled' : ''} aria-label="Su">${icon('up')}</button>
-            <button class="icon-btn" data-down ${i === tables.length - 1 ? 'disabled' : ''} aria-label="Giù">${icon('down')}</button>
-            <button class="icon-btn" data-edit aria-label="Modifica">${icon('edit')}</button>
-            <button class="icon-btn" data-del aria-label="Elimina">${icon('trash')}</button>
-          </div>
-        </div>`,
-              )
-              .join('')
-          : '<p class="muted center">Ancora nessun tavolo.</p>'
-      }</div>`;
+          ? `<div class="btn-row"><button class="btn small ghost" id="arrange">${icon('grid')} Disponi in sala automaticamente</button>
+              <a class="btn small ghost" href="#admin/ospiti/piantina">${icon('pin')} Vai alla piantina</a></div>`
+          : ''
+      }
+      <div class="table-list">${tables.length ? tables.map(tableCard).join('') : '<p class="muted center">Ancora nessun tavolo.</p>'}</div>`;
+
+    $('#bulk', pane).addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      try {
+        const before = tables.length;
+        await api('/api/admin/tables/bulk', {
+          method: 'POST',
+          body: { count: f.count.value, prefix: f.prefix.value, seats: f.seats.value, couple: !!f.couple?.checked },
+        });
+        tables = (await api('/api/admin/tables/arrange', { method: 'POST' })).tables;
+        toast(`${tables.length - before} tavoli creati e disposti in sala ✨`);
+        tablesPane();
+      } catch (err) {
+        errorToast(err);
+      }
+    });
     $('#add-table', pane).addEventListener('submit', async (e) => {
       e.preventDefault();
+      const f = e.target;
       try {
-        const r = await api('/api/admin/tables', {
-          method: 'POST',
-          body: { name: e.target.name.value, description: e.target.description.value },
-        });
-        tables = r.tables;
-        toast('Tavolo aggiunto');
+        tables = (
+          await api('/api/admin/tables', { method: 'POST', body: { name: f.name.value, shape: f.shape.value, seats: f.seats.value } })
+        ).tables;
+        toast('Tavolo aggiunto: posizionalo nella piantina');
         tablesPane();
-        $('#add-table input', pane).focus();
+      } catch (err) {
+        errorToast(err);
+      }
+    });
+    $('#arrange', pane)?.addEventListener('click', async () => {
+      const ok = await confirmDialog(
+        'Riposizionare tutti i tavoli? Il tavolo degli sposi va in alto al centro, gli altri in file sotto. Le posizioni attuali verranno sostituite.',
+        { ok: 'Disponi' },
+      );
+      if (!ok) return;
+      try {
+        tables = (await api('/api/admin/tables/arrange', { method: 'POST' })).tables;
+        toast('Tavoli disposti in sala');
+        ctx.navigate('admin/ospiti/piantina');
       } catch (err) {
         errorToast(err);
       }
     });
     pane.addEventListener('click', onTableClick);
+  }
+
+  /** Pick the people of one table: tick to seat them here, untick to free the seat. */
+  function assignSheet(t) {
+    const selected = new Set(t.guests.map((g) => g.id));
+    const tableName = (id) => tables.find((x) => x.id === id)?.name || '';
+    const { el, close } = sheet(`
+      <h3 class="sheet-title">${esc(t.name)}</h3>
+      <p class="sheet-text small" id="as-count"></p>
+      <input type="search" id="as-q" placeholder="Cerca un invitato…" />
+      <label class="switch-row"><input type="checkbox" id="as-free" checked /> <span>Solo chi non ha ancora un tavolo</span></label>
+      <div class="assign-list" id="as-list"></div>
+      <div class="sheet-actions"><button class="btn primary block" id="as-save">${icon('check')} Salva</button></div>`);
+    const list = el.querySelector('#as-list');
+    const count = () => {
+      const over = t.seats && selected.size > t.seats;
+      el.querySelector('#as-count').innerHTML = `<b>${selected.size}${t.seats ? ` / ${t.seats}` : ''}</b> ${
+        t.seats ? 'posti occupati' : 'persone'
+      }${over ? ' · <span class="danger-text">più persone dei posti</span>' : ''}`;
+    };
+    const render = () => {
+      const qv = el.querySelector('#as-q').value.trim().toLowerCase();
+      const freeOnly = el.querySelector('#as-free').checked;
+      const rank = (g) => (selected.has(g.id) || g.tableId === t.id ? 0 : g.tableId ? 2 : 1);
+      const rows = guests
+        .filter((g) => (!freeOnly || !g.tableId || g.tableId === t.id || selected.has(g.id)) && (!qv || g.name.toLowerCase().includes(qv)))
+        .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'it'));
+      list.innerHTML = rows.length
+        ? rows
+            .map(
+              (g) => `<label class="assign-row"><input type="checkbox" data-g="${g.id}" ${selected.has(g.id) ? 'checked' : ''} />
+                <span>${esc(g.name)}</span>${g.tableId && g.tableId !== t.id ? `<em>ora: ${esc(tableName(g.tableId))}</em>` : ''}</label>`,
+            )
+            .join('')
+        : '<p class="muted center small">Nessun invitato da mostrare.</p>';
+      count();
+    };
+    render();
+    el.querySelector('#as-q').addEventListener('input', render);
+    el.querySelector('#as-free').addEventListener('change', render);
+    list.addEventListener('change', (e) => {
+      const id = Number(e.target.dataset.g);
+      if (e.target.checked) selected.add(id);
+      else selected.delete(id);
+      count();
+    });
+    el.querySelector('#as-save').addEventListener('click', async () => {
+      const add = [...selected].filter((id) => guests.find((g) => g.id === id)?.tableId !== t.id);
+      const remove = t.guests.map((g) => g.id).filter((id) => !selected.has(id));
+      try {
+        let r;
+        if (add.length) r = await api('/api/admin/guests/assign', { method: 'POST', body: { guestIds: add, tableId: t.id } });
+        if (remove.length) r = await api('/api/admin/guests/assign', { method: 'POST', body: { guestIds: remove, tableId: null } });
+        if (r) {
+          guests = r.guests;
+          tables = r.tables;
+        }
+        close();
+        toast(`${t.name}: ${selected.size} ${selected.size === 1 ? 'persona' : 'persone'}`);
+        tablesPane();
+      } catch (err) {
+        errorToast(err);
+      }
+    });
   }
 
   async function onTableClick(e) {
@@ -561,6 +700,7 @@ async function adminGuests(main, args) {
     const t = tables.find((x) => x.id === id);
     const idx = tables.indexOf(t);
     try {
+      if (btn.matches('[data-assign]')) return assignSheet(t);
       if (btn.matches('[data-up],[data-down]')) {
         const ids = tables.map((x) => x.id);
         const j = btn.matches('[data-up]') ? idx - 1 : idx + 1;
@@ -569,21 +709,29 @@ async function adminGuests(main, args) {
       } else if (btn.matches('[data-del]')) {
         if (!(await confirmDialog(`Eliminare «${t.name}»? Gli invitati resteranno senza tavolo.`, { ok: 'Elimina', danger: true }))) return;
         tables = (await api(`/api/admin/tables/${id}`, { method: 'DELETE' })).tables;
+        guests = (await api('/api/admin/guests')).guests;
       } else if (btn.matches('[data-edit]')) {
         const { el, close } = sheet(`
           <h3 class="sheet-title">Modifica tavolo</h3>
           <form class="form">
             <label class="field"><span>Nome</span><input name="name" required value="${esc(t.name)}"/></label>
-            <label class="field"><span>Descrizione</span><input name="description" value="${esc(t.description)}"/></label>
+            <label class="field"><span>Descrizione (es. «vicino alla vetrata»)</span><input name="description" value="${esc(t.description)}"/></label>
+            <div class="field-row">
+              <label class="field"><span>Forma</span><select name="shape">
+                <option value="round" ${t.shape !== 'rect' ? 'selected' : ''}>Rotondo</option>
+                <option value="rect" ${t.shape === 'rect' ? 'selected' : ''}>Rettangolare</option></select></label>
+              <label class="field narrow"><span>Posti</span><input name="seats" type="number" min="0" max="30" value="${t.seats || 0}"/></label>
+            </div>
             <button class="btn primary block">Salva</button>
           </form>`);
         el.querySelector('form').addEventListener('submit', async (ev) => {
           ev.preventDefault();
+          const f = ev.target;
           try {
             tables = (
               await api(`/api/admin/tables/${id}`, {
                 method: 'PATCH',
-                body: { name: ev.target.name.value, description: ev.target.description.value },
+                body: { name: f.name.value, description: f.description.value, shape: f.shape.value, seats: f.seats.value },
               })
             ).tables;
             close();
@@ -604,30 +752,38 @@ async function adminGuests(main, args) {
 
   function floorPane() {
     resetPane();
-    let selected = tables.find((t) => t.x == null)?.id ?? tables[0]?.id ?? null;
+    const ENTRANCE = 'entrance';
+    let selected = tables.find((t) => t.x == null)?.id ?? tables.find(isCoupleTable)?.id ?? tables[0]?.id ?? ENTRANCE;
     const draw = () => {
       const floorplan = ctx.S.settings.floorplan ? `/uploads/${ctx.S.settings.floorplan}` : null;
+      const entrance = ctx.S.settings.hallEntrance;
       const sel = tables.find((t) => t.id === selected);
       pane.innerHTML = `
         <div class="card">
-          <p class="small">Carica una foto o un disegno della sala, poi <b>scegli un tavolo e tocca la piantina</b> nel punto in cui si trova. Gli invitati vedranno il loro tavolo evidenziato.
-          Senza piantina verrà mostrato uno schema automatico.</p>
+          <p class="small">Scegli qui sotto l'<b>ingresso</b> o un <b>tavolo</b>, poi tocca la piantina nel punto giusto.
+          La linea tratteggiata è il percorso che vedrà l'invitato, dall'ingresso al suo tavolo.
+          Se avete la planimetria della wedding planner potete caricarla come sfondo.</p>
           <div class="btn-row">
-            <button class="btn small primary" id="fp-upload">${icon('upload')} ${floorplan ? 'Cambia piantina' : 'Carica piantina'}</button>
-            ${floorplan ? `<button class="btn small ghost" id="fp-remove">${icon('trash')} Rimuovi</button>` : ''}
+            <button class="btn small ghost" id="fp-arrange">${icon('grid')} Disponi automaticamente</button>
+            <button class="btn small ghost" id="fp-upload">${icon('upload')} ${floorplan ? 'Cambia planimetria' : 'Carica planimetria'}</button>
+            ${floorplan ? `<button class="btn small ghost" id="fp-remove">${icon('trash')} Togli planimetria</button>` : ''}
           </div>
         </div>
         ${
           tables.length
-            ? `<div class="chips">${tables
-                .map(
-                  (t) =>
-                    `<button class="chip ${t.id === selected ? 'on' : ''} ${t.x != null ? 'placed' : ''}" data-sel="${t.id}">${t.x != null ? icon('check') : ''}${esc(t.name)}</button>`,
-                )
-                .join('')}</div>
-              <p class="small center">${sel ? `Tocca la piantina per posizionare <b>${esc(sel.name)}</b>` : ''}
-              ${sel?.x != null ? ` · <button class="link" id="fp-unplace">rimuovi posizione</button>` : ''}</p>
-              ${ctx.floorplanHTML({ floorplan, tables }, selected, { editable: true })}`
+            ? `<div class="chips">
+                <button class="chip entrance ${selected === ENTRANCE ? 'on' : ''}" data-sel="${ENTRANCE}">Ingresso</button>
+                ${tables
+                  .map(
+                    (t) =>
+                      `<button class="chip ${t.id === selected ? 'on' : ''} ${t.x != null ? 'placed' : ''}" data-sel="${t.id}">${t.x != null ? icon('check') : ''}${esc(t.name)}</button>`,
+                  )
+                  .join('')}
+              </div>
+              <p class="small center">${
+                selected === ENTRANCE ? 'Tocca la piantina dove si trova <b>l\'ingresso</b>' : sel ? `Tocca la piantina per posizionare <b>${esc(sel.name)}</b>` : ''
+              }${sel?.x != null ? ` · <button class="link" id="fp-unplace">togli dalla piantina</button>` : ''}</p>
+              ${ctx.floorplanHTML({ floorplan, tables, entrance }, sel?.id, { editable: true })}`
             : `<div class="note">Crea prima i tavoli nella scheda <a href="#admin/ospiti/tavoli">Tavoli</a>.</div>`
         }`;
     };
@@ -636,7 +792,12 @@ async function adminGuests(main, args) {
       try {
         const chip = e.target.closest('[data-sel]');
         if (chip) {
-          selected = Number(chip.dataset.sel);
+          selected = chip.dataset.sel === ENTRANCE ? ENTRANCE : Number(chip.dataset.sel);
+          return draw();
+        }
+        if (e.target.closest('#fp-arrange')) {
+          if (!(await confirmDialog('Riposizionare automaticamente tutti i tavoli?', { ok: 'Disponi' }))) return;
+          tables = (await api('/api/admin/tables/arrange', { method: 'POST' })).tables;
           return draw();
         }
         if (e.target.closest('#fp-upload')) {
@@ -646,7 +807,7 @@ async function adminGuests(main, args) {
             form.append('file', img.blob, 'floorplan.jpg');
             await uploadForm('/api/admin/upload/floorplan', form);
             await ctx.refreshState();
-            toast('Piantina caricata');
+            toast('Planimetria caricata');
             draw();
           });
         }
@@ -660,15 +821,20 @@ async function adminGuests(main, args) {
           return draw();
         }
         const fp = e.target.closest('.floorplan.editable');
-        if (fp && selected) {
-          const rect = fp.getBoundingClientRect();
-          const x = Math.round(((e.clientX - rect.left) / rect.width) * 1000) / 10;
-          const y = Math.round(((e.clientY - rect.top) / rect.height) * 1000) / 10;
+        if (!fp) return;
+        const rect = fp.getBoundingClientRect();
+        const x = Math.round(((e.clientX - rect.left) / rect.width) * 1000) / 10;
+        const y = Math.round(((e.clientY - rect.top) / rect.height) * 1000) / 10;
+        if (selected === ENTRANCE) {
+          await api('/api/admin/settings', { method: 'PATCH', body: { hallEntrance: { x, y } } });
+          await ctx.refreshState();
+          toast('Ingresso posizionato');
+        } else if (selected) {
           tables = (await api(`/api/admin/tables/${selected}`, { method: 'PATCH', body: { x, y } })).tables;
           const next = tables.find((t) => t.x == null);
           if (next) selected = next.id;
-          draw();
         }
+        draw();
       } catch (err) {
         errorToast(err);
       }
@@ -811,6 +977,33 @@ async function uploadIcons({ accent, text, image, script = false }) {
   return uploadForm('/api/admin/icon', form);
 }
 
+function iconPicker(current, onPick) {
+  const { el, close } = sheet(`
+    <h3 class="sheet-title">Icona della scheda</h3>
+    <div class="icon-grid">${Object.entries(LINE_ICONS)
+      .map(
+        ([key, ic]) =>
+          `<button type="button" class="icon-choice ${current === `line:${key}` ? 'on' : ''}" data-v="line:${key}">${cardIcon(`line:${key}`)}<span>${ic.label}</span></button>`,
+      )
+      .join('')}</div>
+    <form class="inline-form" id="emoji-form">
+      <input name="emoji" maxlength="8" placeholder="Oppure un'emoji, es. 🥂" value="${current && !String(current).startsWith('line:') ? esc(current) : ''}" />
+      <button class="btn small ghost">Usa</button>
+    </form>
+    <div class="sheet-actions"><button type="button" class="btn ghost block" data-v="">Nessuna icona</button></div>`);
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-v]');
+    if (!b) return;
+    onPick(b.dataset.v);
+    close();
+  });
+  el.querySelector('#emoji-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    onPick(e.target.emoji.value.trim());
+    close();
+  });
+}
+
 async function imageTone(blob) {
   try {
     const bmp = await createImageBitmap(blob);
@@ -831,7 +1024,10 @@ function sectionEditor(sec, i, n) {
   return `
     <div class="section-editor card" data-i="${i}">
       <div class="se-head">
-        <input class="se-icon" data-f="icon" value="${esc(sec.icon)}" maxlength="8" aria-label="Emoji" />
+        <input type="hidden" data-f="icon" value="${esc(sec.icon)}" />
+        <button type="button" class="se-icon-btn ${String(sec.icon).startsWith('line:') ? 'line' : ''}" data-icon-pick aria-label="Scegli l'icona">${
+          sec.icon ? cardIcon(sec.icon) : icon('plus')
+        }</button>
         <input class="se-title" data-f="title" value="${esc(sec.title)}" placeholder="Titolo" />
         <div class="se-tools">
           <button type="button" class="icon-btn" data-move="-1" ${i === 0 ? 'disabled' : ''} aria-label="Su">${icon('up')}</button>
@@ -939,6 +1135,13 @@ async function adminContent(main) {
     if (!btn) return;
     const i = Number(btn.closest('[data-i]').dataset.i);
     sections = readSections();
+    if (btn.matches('[data-icon-pick]')) {
+      return iconPicker(sections[i].icon, (value) => {
+        sections = readSections();
+        sections[i].icon = value;
+        drawSections();
+      });
+    }
     if (btn.matches('[data-img-up]')) {
       return pickFile(async (file) => {
         const [img] = await resizeImage(file, [{ max: 1600, quality: 0.86 }]);

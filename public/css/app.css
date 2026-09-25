@@ -718,15 +718,27 @@ input[type='checkbox'] {
 }
 .info-body h3 {
   font-family: var(--serif);
-  font-size: 1.45rem;
+  font-size: 1.85rem;
   font-weight: 600;
-  margin-bottom: 2px;
+  color: var(--accent);
+  margin-bottom: 6px;
+  text-wrap: balance;
+}
+.info-body h3::after {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 1px;
+  margin: 10px auto 0;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .info-sub {
   color: var(--accent);
   font-weight: 600;
-  font-size: 0.9rem;
-  margin-bottom: 6px;
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
 .info-body p {
   color: var(--ink-2);
@@ -900,9 +912,10 @@ input[type='checkbox'] {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  background: var(--bg-2);
+  background: var(--card);
   user-select: none;
   -webkit-user-select: none;
+  --fp-line: var(--accent);
 }
 .floorplan img {
   display: block;
@@ -910,9 +923,17 @@ input[type='checkbox'] {
 }
 .floorplan.blank {
   aspect-ratio: 4 / 3;
-  background:
-    radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent) 1px, transparent 1.5px) 0 0 / 18px 18px,
-    var(--bg-2);
+  background: color-mix(in srgb, var(--accent) 3%, #fff);
+}
+/* The hall: a fine double line, like an architect's drawing. */
+.fp-room {
+  position: absolute;
+  inset: 3%;
+  border: 1.5px solid var(--fp-line);
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 3%, #fff),
+    0 0 0 5px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 .floorplan.editable {
   cursor: crosshair;
@@ -921,52 +942,200 @@ input[type='checkbox'] {
 }
 .fp-table {
   position: absolute;
+  width: 7.4%;
   transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
   pointer-events: none;
+  color: var(--fp-line);
 }
-.fp-table i {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid color-mix(in srgb, var(--ink) 40%, transparent);
+.fp-table.rect {
+  width: 15%;
+}
+.fp-table svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.fp-top {
+  fill: #fff;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+.fp-chair {
+  fill: color-mix(in srgb, var(--accent) 18%, #fff);
+  stroke: currentColor;
+  stroke-width: 0.9;
+}
+.fp-table text {
+  font: 600 11px var(--sans);
+  fill: currentColor;
 }
 .fp-table span {
-  font-size: 0.62rem;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 2px;
+  font-size: 0.56rem;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.85);
-  padding: 1px 5px;
-  border-radius: 6px;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
   white-space: nowrap;
-  max-width: 90px;
+  max-width: 190%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fp-table.me {
-  z-index: 2;
+.fp-table.numbered span {
+  display: none;
 }
-.fp-table.me i {
-  width: 26px;
-  height: 26px;
-  background: var(--accent);
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
-  animation: here 1.6s infinite;
+.fp-table.rect span {
+  font-family: var(--serif);
+  font-size: 0.75rem;
+  color: var(--fp-line);
+}
+.names-script .fp-table.rect span {
+  font-family: 'Italianno', var(--serif);
+  font-size: 1.05rem;
+  font-weight: 400;
+  margin-top: 0;
+}
+.fp-table.me {
+  z-index: 3;
+  color: var(--accent);
+}
+.fp-table.me .fp-top {
+  fill: var(--accent);
+}
+.fp-table.me .fp-chair {
+  fill: var(--accent);
+}
+.fp-table.me text {
+  fill: #fff;
+}
+.fp-table.me::before {
+  content: '';
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  animation: here 1.8s ease-out infinite;
 }
 .fp-table.me span {
-  background: var(--accent);
+  display: block;
+  max-width: none;
+  overflow: visible;
+  margin-top: 4px;
+  font-size: 0.72rem;
   color: #fff;
-  font-size: 0.75rem;
-  max-width: 140px;
+  background: var(--accent);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.fp-table.me.label-up span {
+  top: auto;
+  bottom: 100%;
+  margin: 0 0 6px;
 }
 @keyframes here {
-  70% {
-    box-shadow: 0 0 0 14px color-mix(in srgb, var(--accent) 0%, transparent);
+  from {
+    transform: scale(0.85);
+    opacity: 0.9;
   }
+  to {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+/* Entrance: a gap in the wall with its label, on whichever side it sits. */
+.fp-entrance {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  pointer-events: none;
+  color: var(--fp-line);
+}
+.fp-entrance i {
+  display: block;
+  width: 30px;
+  height: 9px;
+  background: color-mix(in srgb, var(--accent) 3%, #fff);
+  border-left: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+}
+.fp-entrance.left i,
+.fp-entrance.right i {
+  width: 9px;
+  height: 30px;
+  border: 0;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
+.fp-entrance span {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.fp-entrance.bottom span {
+  bottom: 100%;
+  margin-bottom: 3px;
+}
+.fp-entrance.top span {
+  top: 100%;
+  margin-top: 3px;
+}
+.fp-entrance.left span,
+.fp-entrance.right span {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.fp-entrance.left span {
+  left: 100%;
+  margin-left: 4px;
+}
+.fp-entrance.right span {
+  left: auto;
+  right: 100%;
+  margin-right: 4px;
+}
+/* The way from the entrance to the guest's table. */
+.fp-route {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.fp-route path {
+  fill: none;
+  stroke-linejoin: round;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  stroke-linecap: round;
+  animation: walk 1.1s linear infinite;
+}
+@keyframes walk {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fp-route path,
+  .fp-table.me::before {
+    animation: none;
+  }
+}
+.fp-hint {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  text-align: center;
 }
 
 /* ---------- Avatars ---------- */
@@ -2015,11 +2184,141 @@ details.more summary {
   align-items: center;
   margin-bottom: 10px;
 }
-.se-icon {
-  width: 52px !important;
-  text-align: center;
-  font-size: 1.3rem !important;
-  padding: 8px 4px !important;
+.se-icon-btn {
+  appearance: none;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-size: 1.4rem;
+  color: var(--accent);
+  cursor: pointer;
+}
+.se-icon-btn svg {
+  width: 38px;
+  height: 38px;
+}
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.icon-choice {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--accent);
+  font: 500 0.7rem var(--sans);
+  cursor: pointer;
+}
+.icon-choice span {
+  color: var(--ink-2);
+}
+.icon-choice svg {
+  width: 40px;
+  height: 40px;
+}
+.icon-choice.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Tables in the Regia */
+.seat-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.seat-summary .stat b {
+  font-size: 1.6rem;
+}
+.seat-summary .stat span {
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .seat-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.seat-summary .stat.warn b {
+  color: var(--warn);
+}
+details.fold summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+details.fold summary::-webkit-details-marker {
+  display: none;
+}
+details.fold[open] summary {
+  margin-bottom: 12px;
+}
+.t-count {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 2px 0 6px;
+}
+.t-count.over {
+  color: var(--danger);
+}
+.t-guests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.name-chip {
+  font-size: 0.75rem;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  color: var(--ink-2);
+}
+.assign-list {
+  max-height: 46vh;
+  overflow-y: auto;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.assign-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.assign-row:last-child {
+  border-bottom: 0;
+}
+.assign-row span {
+  flex: 1;
+}
+.assign-row em {
+  font-size: 0.72rem;
+  font-style: normal;
+  color: var(--warn);
+}
+.chip.entrance {
+  border-style: dashed;
 }
 .se-title {
   flex: 1;
@@ -2134,6 +2433,62 @@ details.more summary {
 }
 .names-script .screen-title {
   font-size: 3.2rem;
+}
+.names-script .welcome .script,
+.names-script .info-body h3,
+.names-script .mystery .script,
+.names-script .table-name,
+.names-script .gallery-head .script,
+.names-script .announce-title,
+.names-script .empty h3 {
+  font-family: 'Italianno', var(--serif);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.05;
+  color: var(--accent);
+}
+.names-script .welcome .script,
+.names-script .mystery .script,
+.names-script .gallery-head .script {
+  font-size: 3.1rem;
+}
+.names-script .info-body h3 {
+  font-size: 2.7rem;
+}
+.names-script .table-name {
+  font-size: clamp(3.4rem, 15vw, 4.6rem);
+}
+.names-script .announce-title,
+.names-script .empty h3 {
+  font-size: 2.3rem;
+}
+
+/* Fine-line icon above a card title, between two hairlines. */
+.info-icon.line {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  background: none;
+  color: var(--accent);
+}
+.info-icon.line svg {
+  width: 100%;
+  height: 100%;
+}
+.info-icon.line::before,
+.info-icon.line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 34px;
+  height: 1px;
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.info-icon.line::before {
+  right: calc(100% + 10px);
+}
+.info-icon.line::after {
+  left: calc(100% + 10px);
 }
 
 /* Light cover pictures (drawings, watercolours): keep them bright, dark text on top. */

@@ -306,6 +306,46 @@ test('settings validation keeps links safe', async () => {
   assert.equal(r.data.settings.email.pass, '', 'password never returned');
 });
 
+test('tables: bulk creation, automatic layout, group assignment, entrance', async () => {
+  const before = (await admin.get('/api/admin/tables')).data.tables.length;
+  const bulk = await admin.post('/api/admin/tables/bulk', { count: 18, prefix: 'Tavolo', seats: 8, couple: true });
+  const tables = bulk.data.tables;
+  assert.equal(tables.length, before + 19, '18 round tables + the couple table');
+  const couple = tables.find((t) => t.shape === 'rect');
+  assert.equal(couple.name, 'Sposi');
+  assert.equal(couple.seats, 2);
+  assert.equal(tables[0].id, couple.id, 'couple table listed first');
+  assert.equal(tables.filter((t) => /^Tavolo \d+$/.test(t.name)).length, 18);
+
+  const arranged = (await admin.post('/api/admin/tables/arrange')).data.tables;
+  const c = arranged.find((t) => t.id === couple.id);
+  assert.deepEqual([c.x, c.y], [50, 13], 'couple table at the top centre');
+  assert.ok(arranged.every((t) => t.x > 0 && t.x < 100 && t.y > 0 && t.y < 100));
+  assert.ok(arranged.filter((t) => t.id !== couple.id).every((t) => t.y > c.y), 'others below it');
+
+  const t5 = arranged.find((t) => t.name === 'Tavolo 5');
+  const guests = (await admin.get('/api/admin/guests')).data.guests;
+  const ids = guests.slice(0, 2).map((g) => g.id);
+  const assign = await admin.post('/api/admin/guests/assign', { guestIds: ids, tableId: t5.id });
+  assert.equal(assign.data.changed, 2);
+  assert.deepEqual(
+    assign.data.tables.find((t) => t.id === t5.id).guests.map((g) => g.id).sort(),
+    [...ids].sort(),
+  );
+  const off = await admin.post('/api/admin/guests/assign', { guestIds: [ids[0]], tableId: null });
+  assert.equal(off.data.guests.find((g) => g.id === ids[0]).tableId, null);
+
+  await admin.patch(`/api/admin/tables/${t5.id}`, { shape: 'rect', seats: 99 });
+  const t5b = (await admin.get('/api/admin/tables')).data.tables.find((t) => t.id === t5.id);
+  assert.deepEqual([t5b.shape, t5b.seats], ['rect', 30], 'seats capped at 30');
+
+  const ent = await admin.patch('/api/admin/settings', { hallEntrance: { x: 8, y: 96 } });
+  assert.deepEqual(ent.data.settings.hallEntrance, { x: 8, y: 96 });
+  const seating = await admin.get('/api/seating');
+  assert.deepEqual(seating.data.entrance, { x: 8, y: 96 });
+  assert.ok(seating.data.tables.some((t) => t.shape === 'rect'));
+});
+
 test('style options and card images', async () => {
   const form = new FormData();
   form.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 's.jpg');

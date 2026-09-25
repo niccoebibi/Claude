@@ -20,6 +20,7 @@ import {
   copyText,
   device,
   ACCENTS,
+  cardIcon,
 } from './util.js';
 
 /* ================================================================== */
@@ -199,7 +200,7 @@ function onSettings(settings) {
 function onModeChanged() {
   renderNav();
   if (S.settings.mode === 'live') {
-    toast('📸 La bacheca live è aperta!');
+    toast('📸 La chat LIVE è aperta!');
     if (!S.isAdmin && ['home', 'profilo'].includes(currentView)) return navigate('bacheca');
   }
   if (!boardOpen() && ['bacheca', 'foto'].includes(currentView)) return navigate('home');
@@ -256,7 +257,7 @@ function navItems() {
   const items =
     S.settings.mode === 'live'
       ? [
-          ['bacheca', 'Bacheca', 'chat'],
+          ['bacheca', 'Chat LIVE', 'chat'],
           ['foto', 'Foto', 'image'],
           ['tavolo', 'Tavolo', 'table'],
           ['home', 'Info', 'info'],
@@ -729,7 +730,7 @@ function sectionHTML(sec) {
   return `
     <section class="card info-card ${img ? 'has-img' : ''}">
       ${img ? `<img class="info-img" src="${esc(img)}" alt="" loading="lazy" />` : ''}
-      ${sec.icon ? `<div class="info-icon">${esc(sec.icon)}</div>` : ''}
+      ${sec.icon ? `<div class="info-icon ${sec.icon.startsWith('line:') ? 'line' : ''}">${cardIcon(sec.icon)}</div>` : ''}
       <div class="info-body">
         ${sec.title ? `<h3>${esc(sec.title)}</h3>` : ''}
         ${sec.subtitle ? `<div class="info-sub">${esc(sec.subtitle)}</div>` : ''}
@@ -759,7 +760,7 @@ async function viewHome(main) {
   main.innerHTML = `
     ${heroHTML()}
     <div class="container">
-      ${s.mode === 'live' ? `<a class="card live-cta" href="#bacheca"><span class="live-dot"></span><div><b>La bacheca live è aperta!</b><div class="small">Condividi foto e messaggi con tutti</div></div>${icon('right')}</a>` : ''}
+      ${s.mode === 'live' ? `<a class="card live-cta" href="#bacheca"><span class="live-dot"></span><div><b>La chat LIVE è aperta!</b><div class="small">Condividi foto e messaggi con tutti</div></div>${icon('right')}</a>` : ''}
       ${ann ? `<section class="card announce-card">${icon('megaphone')}<div>${ann.title ? `<b>${esc(ann.title)}</b>` : ''}<p>${richText(ann.text)}</p></div></section>` : ''}
       ${seatingTeaserHTML()}
       ${s.welcomeTitle || s.welcomeText ? `<section class="card welcome"><h2 class="script">${esc(s.welcomeTitle)}</h2><p>${richText(s.welcomeText)}</p></section>` : ''}
@@ -789,19 +790,57 @@ function autoPosition(i, n) {
   return { x: ((i % cols) + 0.5) * (100 / cols), y: (Math.floor(i / cols) + 0.5) * (100 / rows) };
 }
 
-export function floorplanHTML({ floorplan, tables = [] }, highlightId, { editable = false } = {}) {
+/** Round table with its chairs, or the couple's long table with two chairs facing the room. */
+function tableGraphic(t) {
+  if (t.shape === 'rect') {
+    return `<svg viewBox="0 0 60 26" aria-hidden="true"><circle class="fp-chair" cx="23" cy="5" r="3.3"/><circle class="fp-chair" cx="37" cy="5" r="3.3"/><rect class="fp-top" x="3" y="11" width="54" height="11" rx="2.5"/></svg>`;
+  }
+  const n = Math.max(2, Math.min(12, t.seats || 8));
+  const chairs = Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    return `<circle class="fp-chair" cx="${(20 + 15.6 * Math.cos(a)).toFixed(1)}" cy="${(20 + 15.6 * Math.sin(a)).toFixed(1)}" r="2.7"/>`;
+  }).join('');
+  const num = String(t.name).match(/(\d+)\s*$/)?.[1];
+  return `<svg viewBox="0 0 40 40" aria-hidden="true">${chairs}<circle class="fp-top" cx="20" cy="20" r="10.5"/>${
+    num ? `<text x="20" y="20.5" text-anchor="middle" dominant-baseline="middle">${num}</text>` : ''
+  }</svg>`;
+}
+
+export function floorplanHTML({ floorplan, tables = [], entrance }, highlightId, { editable = false } = {}) {
   if (!floorplan && !tables.length) return '';
   const list = tables
     .map((t, i) => (t.x != null && t.y != null ? t : floorplan ? null : { ...t, ...autoPosition(i, tables.length) }))
     .filter(Boolean);
+  const me = list.find((t) => t.id === highlightId);
+  const ent = entrance && entrance.x != null ? entrance : null;
+  // The way from the entrance, along the aisles: up the entrance side, across the aisle
+  // next to the table's row, then straight to the table.
+  let route = '';
+  if (me && ent) {
+    const aisle = me.y + (ent.y > me.y ? 1 : -1) * (me.shape === 'rect' ? 9 : 11);
+    const pts = [
+      [ent.x, ent.y],
+      [ent.x, aisle],
+      [me.x, aisle],
+      [me.x, me.y],
+    ];
+    route = `<svg class="fp-route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M${pts
+      .map((p) => p.join(' '))
+      .join(' L')}" vector-effect="non-scaling-stroke"/></svg>`;
+  }
+  const side = ent ? (ent.x < 8 ? 'left' : ent.x > 92 ? 'right' : ent.y < 50 ? 'top' : 'bottom') : '';
   return `
     <div class="floorplan ${floorplan ? 'has-img' : 'blank'} ${editable ? 'editable' : ''}">
-      ${floorplan ? `<img src="${esc(floorplan)}" alt="Piantina della sala" draggable="false" />` : ''}
+      ${floorplan ? `<img src="${esc(floorplan)}" alt="Piantina della sala" draggable="false" />` : '<div class="fp-room"></div>'}
+      ${route}
+      ${ent ? `<div class="fp-entrance ${side}" data-entrance style="left:${ent.x}%;top:${ent.y}%"><i></i><span>Ingresso</span></div>` : ''}
       ${list
-        .map(
-          (t) =>
-            `<div class="fp-table ${t.id === highlightId ? 'me' : ''}" data-table="${t.id}" style="left:${t.x}%;top:${t.y}%"><i></i><span>${esc(t.name)}</span></div>`,
-        )
+        .map((t) => {
+          const numbered = /\d+\s*$/.test(t.name) && t.shape !== 'rect';
+          // The highlighted table's label goes on the side away from the route, so it never hides it.
+          const up = t.id === highlightId && ent && ent.y > t.y ? 'label-up' : '';
+          return `<div class="fp-table ${t.shape === 'rect' ? 'rect' : 'round'} ${t.id === highlightId ? 'me' : ''} ${numbered ? 'numbered' : ''} ${up}" data-table="${t.id}" style="left:${t.x}%;top:${t.y}%">${tableGraphic(t)}<span>${esc(t.name)}</span></div>`;
+        })
         .join('')}
     </div>`;
 }
@@ -845,7 +884,9 @@ async function viewSeating(main) {
         </section>
         ${
           d.tables?.length || d.floorplan
-            ? `<section class="card"><h3 class="card-title small-title">${icon('pin')} Dove si trova</h3>${floorplanHTML(d, d.table.id)}</section>`
+            ? `<section class="card fp-card"><h3 class="card-title small-title">${icon('pin')} Dove si trova</h3>${floorplanHTML(d, d.table.id)}${
+                d.entrance ? '<p class="fp-hint">Dall\'ingresso segui la linea tratteggiata fino al tuo tavolo.</p>' : ''
+              }</section>`
             : ''
         }
         ${
@@ -1017,13 +1058,13 @@ async function viewBoard(main) {
   const canChat = S.isAdmin || s.allowChat;
   const canPhoto = S.isAdmin || s.allowPhotos;
   main.innerHTML = `
-    ${s.mode !== 'live' ? `<div class="banner">${icon('eye')} Anteprima: gli invitati vedranno la bacheca quando attiverai la modalità Live.</div>` : ''}
+    ${s.mode !== 'live' ? `<div class="banner">${icon('eye')} Anteprima: gli invitati vedranno la chat LIVE quando la aprirai dalla Regia.</div>` : ''}
     <div class="feed-wrap">
       <div class="feed-more" hidden><button class="btn small ghost" id="more">Messaggi precedenti</button></div>
       <div class="feed" id="feed"></div>
       <div class="empty" id="empty" hidden>
         <div class="empty-emoji">📸</div>
-        <h3>La bacheca è pronta!</h3>
+        <h3>La chat LIVE è pronta!</h3>
         <p>Scatta la prima foto o scrivi un messaggio per gli sposi.</p>
       </div>
     </div>

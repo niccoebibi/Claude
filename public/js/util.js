@@ -124,6 +124,59 @@ const ICONS = {
   qr: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="14.01"/><line x1="18" y1="14" x2="21" y2="14"/><line x1="14" y1="18" x2="14" y2="21"/><line x1="18" y1="18" x2="21" y2="21"/>',
 };
 
+// Fine-line illustrations for the info cards (48x48), in the style of the couple's stationery.
+export const LINE_ICONS = {
+  busta: {
+    label: 'Busta',
+    svg: '<rect x="7" y="13" width="34" height="23" rx="2.5"/><path d="M8 15l16 10 16-10"/><path d="M24 35c-2.8-2-5.6-3.9-5.6-6.4 0-1.7 1.3-2.8 2.8-2.8 1.2 0 2.2.6 2.8 1.7.6-1.1 1.6-1.7 2.8-1.7 1.5 0 2.8 1.1 2.8 2.8 0 2.5-2.8 4.4-5.6 6.4z"/>',
+  },
+  regalo: {
+    label: 'Regalo',
+    svg: '<rect x="9" y="20" width="30" height="8" rx="1.5"/><path d="M11 28v12a2 2 0 0 0 2 2h22a2 2 0 0 0 2-2V28"/><path d="M24 20v22"/><path d="M24 20c-2-4.5-9-7.5-10.5-3.8C12.4 19 18 20 24 20z"/><path d="M24 20c2-4.5 9-7.5 10.5-3.8C35.6 19 30 20 24 20z"/>',
+  },
+  fedi: {
+    label: 'Fedi',
+    svg: '<circle cx="19" cy="29" r="10"/><circle cx="29" cy="29" r="10"/><path d="M29 19l-3-3.5 3-3.2 3 3.2z"/>',
+  },
+  chiesa: {
+    label: 'Chiesa',
+    svg: '<path d="M24 4v7M21 7h6"/><path d="M14 42V24l10-9 10 9v18"/><path d="M8 42V31l6-4M40 42V31l-6-4"/><path d="M20 42v-7a4 4 0 0 1 8 0v7"/><circle cx="24" cy="24.5" r="2.5"/><path d="M5 42h38"/>',
+  },
+  brindisi: {
+    label: 'Brindisi',
+    svg: '<g transform="rotate(-12 17 26)"><path d="M13 8h8l-.6 11a3.4 3.4 0 0 1-6.8 0z"/><path d="M17 22.5V36M13.5 36h7"/></g><g transform="rotate(12 31 26)"><path d="M27 8h8l-.6 11a3.4 3.4 0 0 1-6.8 0z"/><path d="M31 22.5V36M27.5 36h7"/></g><path d="M24 3v3.5M20.5 5.5l1.5 1.5M27.5 5.5 26 7"/>',
+  },
+  luogo: { label: 'Luogo', svg: '<path d="M24 43s-12-11.2-12-21a12 12 0 0 1 24 0c0 9.8-12 21-12 21z"/><circle cx="24" cy="22" r="4.5"/>' },
+  parcheggio: { label: 'Parcheggio', svg: '<rect x="9" y="9" width="30" height="30" rx="7"/><path d="M20 33V16h6a5 5 0 0 1 0 10h-6"/>' },
+  calendario: {
+    label: 'Calendario',
+    svg: '<rect x="8" y="11" width="32" height="29" rx="3"/><path d="M8 19h32M16 7v7M32 7v7"/><path d="M24 34.5c-2.3-1.7-4.6-3.2-4.6-5.3 0-1.4 1.1-2.3 2.3-2.3 1 0 1.8.5 2.3 1.4.5-.9 1.3-1.4 2.3-1.4 1.2 0 2.3.9 2.3 2.3 0 2.1-2.3 3.6-4.6 5.3z"/>',
+  },
+  orario: { label: 'Orario', svg: '<circle cx="24" cy="24" r="17"/><path d="M24 14v10l7 4"/>' },
+  cuore: {
+    label: 'Cuore',
+    svg: '<path d="M24 40c-7-5-15-10.4-15-17.5C9 17.8 12.4 14 16.8 14c3 0 5.5 1.6 7.2 4.2C25.7 15.6 28.2 14 31.2 14c4.4 0 7.8 3.8 7.8 8.5C39 29.6 31 35 24 40z"/>',
+  },
+  torta: { label: 'Torta', svg: '<path d="M10 40h28M12 40V30h24v10M15 30v-7h18v7M19 23v-5h10v5M24 18v-4"/><path d="M24 12c-1.2-1.4-.4-3.2 0-4 .4.8 1.2 2.6 0 4z"/>' },
+  musica: { label: 'Musica', svg: '<path d="M19 35V11l18-4v24"/><circle cx="15" cy="35" r="4"/><circle cx="33" cy="31" r="4"/>' },
+  foto: { label: 'Foto', svg: '<path d="M7 17a3 3 0 0 1 3-3h5l3-4h12l3 4h5a3 3 0 0 1 3 3v19a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3z"/><circle cx="24" cy="26" r="7"/>' },
+  casa: { label: 'Casa', svg: '<path d="M8 22 24 9l16 13"/><path d="M12 19v21h24V19"/><path d="M20 40v-9h8v9"/>' },
+  viaggio: { label: 'Viaggio', svg: '<path d="M42 7 6 22l12 4 4 12 5-8 9 6z"/><path d="m18 26 24-19"/>' },
+  hotel: { label: 'Hotel', svg: '<path d="M6 36V12M6 28h36v8M42 28v-5a5 5 0 0 0-5-5H20v10"/><circle cx="13" cy="22" r="3.5"/>' },
+};
+
+/** Card icon: "line:<name>" draws a fine-line illustration, anything else is shown as an emoji. */
+export function cardIcon(value) {
+  const v = String(value || '');
+  if (v.startsWith('line:')) {
+    const ic = LINE_ICONS[v.slice(5)];
+    return ic
+      ? `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic.svg}</svg>`
+      : '';
+  }
+  return esc(v);
+}
+
 export function icon(name, cls = '') {
   return `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 }
