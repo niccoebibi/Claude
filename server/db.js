@@ -208,9 +208,10 @@ export const DEFAULTS = {
   vapid: null,
   secret: null,
   publicUrl: '',
+  seededAt: null,
 };
 
-const PRIVATE_KEYS = new Set(['email', 'vapid', 'secret', 'adminEmail', 'revealAnnounced', 'publicUrl']);
+const PRIVATE_KEYS = new Set(['email', 'vapid', 'secret', 'adminEmail', 'revealAnnounced', 'publicUrl', 'seededAt']);
 
 const upsertSetting = db.prepare(
   'INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
@@ -288,8 +289,11 @@ export function isRevealed(s = getSettings(), t = Date.now()) {
 }
 
 export function publicUrl() {
-  const fromEnv = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || '';
-  return (fromEnv || getSettings().publicUrl || 'http://localhost:3000').replace(/\/+$/, '');
+  // Explicit setting first, then the address the couple opens the Regia from
+  // (so a custom domain works on its own), then Render's own address.
+  const url =
+    process.env.PUBLIC_URL || getSettings().publicUrl || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
+  return url.replace(/\/+$/, '');
 }
 
 export const q = {

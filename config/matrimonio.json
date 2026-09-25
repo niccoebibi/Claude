@@ -1,0 +1,69 @@
+{
+  "_nota": "Configurazione iniziale dell'app: viene caricata una sola volta, al primo avvio online. Dopo si modifica tutto dalla Regia.",
+  "settings": {
+    "coupleNames": "Niccolò & Beatrice",
+    "weddingDate": "2027-04-17T15:00:00.000Z",
+    "tz": "Europe/Rome",
+    "accent": "cobalto",
+    "nameFont": "script",
+    "coverImage": "copertina.jpg",
+    "coverTone": "light",
+    "welcomeTitle": "Il nostro giorno",
+    "welcomeText": "Una data da ricordare. Una giornata da vivere insieme. Un sì per tutta la vita.\n\nDopo otto anni, la promessa di sceglierci per sempre.\n\nNon vediamo l'ora di celebrare con voi uno dei momenti più importanti della nostra vita.",
+    "sections": [
+      {
+        "icon": "",
+        "title": "Il momento del sì",
+        "subtitle": "Sabato 17 aprile 2027 · ore 17:00",
+        "body": "Basilica dei Santi Giovanni e Paolo al Celio\nPiazza dei Santi Giovanni e Paolo 13, Roma\n\n🅿️ Parcheggio riservato presso la Basilica",
+        "linkLabel": "Apri in Maps",
+        "linkUrl": "https://maps.google.com/?q=Basilica+dei+Santi+Giovanni+e+Paolo+al+Celio,+Piazza+dei+Santi+Giovanni+e+Paolo+13,+Roma",
+        "image": ""
+      },
+      {
+        "icon": "",
+        "title": "Dopo il sì",
+        "subtitle": "Palazzo Brancaccio",
+        "body": "Viale del Monte Oppio 7, Roma\n\n🅿️ Parcheggio riservato nel cortile del Palazzo",
+        "linkLabel": "Apri in Maps",
+        "linkUrl": "https://maps.google.com/?q=Palazzo+Brancaccio,+Viale+del+Monte+Oppio+7,+Roma",
+        "image": "palazzo-brancaccio.jpg"
+      },
+      {
+        "icon": "line:busta",
+        "title": "Conferma la tua presenza",
+        "subtitle": "Entro il 31 gennaio",
+        "body": "Saremmo felici di ricevere la vostra conferma.",
+        "linkLabel": "Conferma (RSVP)",
+        "linkUrl": "https://withjoy.com/niccolo-beatrice-2027/rsvp",
+        "image": ""
+      },
+      {
+        "icon": "line:regalo",
+        "title": "Un pensiero per noi",
+        "subtitle": "Lista nozze",
+        "body": "La vostra presenza è il regalo più bello.\nPer chi desidera farci un pensiero: la nostra casa e il nostro viaggio di nozze.",
+        "linkLabel": "Scopri la lista nozze",
+        "linkUrl": "https://withjoy.com/niccolo-beatrice-2027/page/un-pensiero-per-noi",
+        "image": "lista-nozze.jpg"
+      }
+    ],
+    "revealAt": "2027-04-17T16:45:00.000Z",
+    "hallEntrance": {
+      "x": 10,
+      "y": 97
+    },
+    "notifyOnLive": true
+  },
+  "images": {
+    "copertina.jpg": "https://withjoy.com/media/ec6908316eb9dcbfc1009574f2735702b0784230d344cb8cb/8f840220-a95a-11f1-ab70-676aeed8e992-Designer%20(91).png",
+    "palazzo-brancaccio.jpg": "https://withjoy.com/media/ec6908316eb9dcbfc1009574f2735702b0784230d344cb8cb/b8dc2f50-a958-11f1-8b7a-1f334aaa03c7-Designer%20(89).png",
+    "lista-nozze.jpg": "https://withjoy.com/media/ec6908316eb9dcbfc1009574f2735702b0784230d344cb8cb/79fa86d0-b0ef-11f1-86db-f3b340722355-Gemini_Generated_Image_vazshrvazshrvazs.jpg"
+  },
+  "tables": {
+    "couple": true,
+    "count": 18,
+    "prefix": "Tavolo",
+    "seats": 8
+  }
+}

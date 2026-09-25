@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const KEY = 'wedding-demo-v7';
+  const KEY = 'wedding-demo-v8';
   const DEMO_URL = 'https://www.17aprile2027.it';
   const ACCENTS = {
     salvia: { name: 'Salvia', color: '#6F826A' },
@@ -30,8 +30,6 @@
       .filter(Boolean)
       .sort()
       .join(' ');
-  // Europe/Rome is UTC+2 in April.
-  const rome = (y, mo, d, h, mi) => new Date(Date.UTC(y, mo - 1, d, h - 2, mi)).toISOString();
 
   /* ---------------------------------------------------------------- */
   /* Sample photos, painted on a canvas                                */
@@ -68,6 +66,9 @@
   /* Seed data                                                         */
   /* ---------------------------------------------------------------- */
 
+  const INITIAL = window.__INITIAL || { settings: {}, tables: {} };
+  const asset = (name) => new URL(`img/${name}`, document.baseURI).href;
+
   function arrangeTables(list) {
     const isCouple = (t) => t.shape === 'rect' || /spos/i.test(t.name);
     const couple = list.filter(isCouple);
@@ -89,9 +90,10 @@
   function seed() {
     const t = Date.now();
     // 19 tables like the real hall: the couple's table for two at the top centre, 18 round tables in rows.
+    const plan = { count: 18, seats: 8, prefix: 'Tavolo', ...INITIAL.tables };
     const tables = [{ id: 1, name: 'Sposi', description: 'Il tavolo degli sposi', shape: 'rect', seats: 2, sort: 1 }];
-    for (let n = 1; n <= 18; n++) {
-      tables.push({ id: n + 1, name: `Tavolo ${n}`, description: '', shape: 'round', seats: 8, sort: n + 1 });
+    for (let n = 1; n <= plan.count; n++) {
+      tables.push({ id: n + 1, name: `${plan.prefix} ${n}`, description: '', shape: 'round', seats: plan.seats, sort: n + 1 });
     }
     arrangeTables(tables);
     const first = ['Anna', 'Luca', 'Sara', 'Marco', 'Chiara', 'Paolo', 'Elena', 'Davide', 'Giulia', 'Matteo', 'Laura', 'Andrea', 'Francesca', 'Stefano', 'Valentina', 'Alessandro', 'Martina', 'Simone', 'Federica', 'Riccardo', 'Silvia', 'Tommaso', 'Irene', 'Giorgio', 'Camilla', 'Lorenzo', 'Alice', 'Filippo', 'Marta', 'Edoardo'];
@@ -99,7 +101,7 @@
     const people = [['Niccolò', 1], ['Beatrice', 1]];
     const used = new Set();
     let k = 0;
-    for (let tIdx = 2; tIdx <= 19; tIdx++) {
+    for (let tIdx = 2; tIdx <= plan.count + 1; tIdx++) {
       // Table 7 keeps a free seat for whoever registers in the preview.
       const size = tIdx === 8 ? 7 : 8;
       for (let j = 0; j < size; j++) {
@@ -157,7 +159,7 @@
       msg(6, 16, 'Teresa Ferri', 'text', 'Auguri ragazzi, una giornata perfetta 🌸', null, 95, 6),
     ];
     return {
-      v: 7,
+      v: 8,
       meId: null,
       admin: false,
       pushEnabled: false,
@@ -168,36 +170,20 @@
       tables,
       guests,
       messages,
+      // Same content the real app loads on its first start (config/matrimonio.json).
       settings: {
-        coupleNames: 'Niccolò & Beatrice',
-        // Time as printed on the paper invitation.
-        weddingDate: rome(2027, 4, 17, 17, 0),
-        tz: 'Europe/Rome',
-        accent: 'cobalto',
-        nameFont: 'script',
-        welcomeTitle: 'Il nostro giorno',
-        welcomeText:
-          "Una data da ricordare. Una giornata da vivere insieme. Un sì per tutta la vita.\n\nDopo otto anni, la promessa di sceglierci per sempre.\n\nNon vediamo l'ora di celebrare con voi uno dei momenti più importanti della nostra vita.",
-        // Absolute URL: a relative url() inside a CSS variable resolves against the stylesheet.
-        coverImage: new URL('img/copertina.jpg', document.baseURI).href,
-        coverTone: 'light',
-        sections: [
-          { icon: '', title: 'Il momento del sì', subtitle: 'Sabato 17 aprile 2027 · ore 17:00', body: 'Basilica dei Santi Giovanni e Paolo al Celio\nPiazza dei Santi Giovanni e Paolo 13, Roma\n\n🅿️ Parcheggio riservato presso la Basilica', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Basilica+dei+Santi+Giovanni+e+Paolo+al+Celio,+Piazza+dei+Santi+Giovanni+e+Paolo+13,+Roma', image: '' },
-          { icon: '', title: 'Dopo il sì', subtitle: 'Palazzo Brancaccio', body: 'Viale del Monte Oppio 7, Roma\n\n🅿️ Parcheggio riservato nel cortile del Palazzo', linkLabel: 'Apri in Maps', linkUrl: 'https://maps.google.com/?q=Palazzo+Brancaccio,+Viale+del+Monte+Oppio+7,+Roma', image: 'img/palazzo-brancaccio.jpg' },
-          { icon: 'line:busta', title: 'Conferma la tua presenza', subtitle: 'Entro il 31 gennaio', body: 'Saremmo felici di ricevere la vostra conferma.', linkLabel: 'Conferma (RSVP)', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/rsvp', image: '' },
-          { icon: 'line:regalo', title: 'Un pensiero per noi', subtitle: 'Lista nozze', body: 'La vostra presenza è il regalo più bello.\nPer chi desidera farci un pensiero: la nostra casa e il nostro viaggio di nozze.', linkLabel: 'Scopri la lista nozze', linkUrl: 'https://withjoy.com/niccolo-beatrice-2027/page/un-pensiero-per-noi', image: 'img/lista-nozze.jpg' },
-        ],
+        ...INITIAL.settings,
+        // Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet.
+        coverImage: INITIAL.settings.coverImage ? asset(INITIAL.settings.coverImage) : null,
+        sections: (INITIAL.settings.sections || []).map((sec) => ({ ...sec, image: sec.image ? asset(sec.image) : '' })),
         mode: 'info',
         autoLiveAt: null,
-        notifyOnLive: true,
         allowPhotos: true,
         allowChat: true,
-        revealAt: rome(2027, 4, 17, 18, 45),
         revealAnnounced: false,
         revealMessage: '',
         lastAnnouncement: null,
         floorplan: null,
-        hallEntrance: { x: 10, y: 97 },
         iconVersion: 0,
         customIcon: false,
         adminEmail: 'sposi@gmail.com',
@@ -212,7 +198,7 @@
   } catch {
     store = null;
   }
-  if (!store || store.v !== 7) store = seed();
+  if (!store || store.v !== 8) store = seed();
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(store));
@@ -1083,7 +1069,33 @@
     true,
   );
 
+  function welcome() {
+    if (store.welcomed) return;
+    store.welcomed = true;
+    save();
+    const wrap = document.createElement('div');
+    wrap.className = 'sheet-wrap';
+    wrap.innerHTML = `<div class="sheet-backdrop" data-x></div><div class="sheet" role="dialog" aria-modal="true">
+      <div class="celebrate">💍</div>
+      <h3 class="sheet-title center">L'app del nostro matrimonio</h3>
+      <p class="sheet-text center">Questa è un'anteprima: gli invitati e i tavoli sono di esempio, niente viene inviato a nessuno.</p>
+      <ol class="steps">
+        <li>Registrati come farà un invitato (nome ed email qualsiasi)</li>
+        <li>Tocca <b>«Sposi (Regia)»</b> in alto: è il pannello di Niccolò e Beatrice</li>
+        <li>Prova <b>«Svela adesso»</b> per scoprire il tavolo e la piantina, poi apri la <b>Chat LIVE</b></li>
+      </ol>
+      <div class="sheet-actions"><button class="btn primary block" data-x>Inizia</button></div></div>`;
+    document.body.appendChild(wrap);
+    requestAnimationFrame(() => wrap.classList.add('open'));
+    wrap.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-x]')) return;
+      wrap.classList.remove('open');
+      setTimeout(() => wrap.remove(), 250);
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(welcome, 700);
     const bar = document.getElementById('demo-bar');
     if (!bar) return;
     bar.querySelector(`[data-demo-role="${store.admin ? 'admin' : 'guest'}"]`)?.classList.add('on');

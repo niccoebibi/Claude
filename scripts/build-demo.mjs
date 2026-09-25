@@ -11,16 +11,10 @@ const PUB = path.join(ROOT, 'public');
 const OUT = path.join(ROOT, 'demo', 'dist');
 const DEMO_URL = 'https://www.17aprile2027.it';
 
-// The couple's illustrations, from their wedding website. Kept out of the (public) repo:
-// downloaded into demo/assets/ (git-ignored) on the first build.
-const IMAGES = {
-  'copertina.jpg':
-    'https://withjoy.com/media/ec6908316eb9dcbfc1009574f2735702b0784230d344cb8cb/8f840220-a95a-11f1-ab70-676aeed8e992-Designer%20(91).png',
-  'palazzo-brancaccio.jpg':
-    'https://withjoy.com/media/ec6908316eb9dcbfc1009574f2735702b0784230d344cb8cb/b8dc2f50-a958-11f1-8b7a-1f334aaa03c7-Designer%20(89).png',
-  'lista-nozze.jpg':
-    'https://withjoy.com/media/ec6908316eb9dcbfc1009574f2735702b0784230d344cb8cb/79fa86d0-b0ef-11f1-86db-f3b340722355-Gemini_Generated_Image_vazshrvazshrvazs.jpg',
-};
+// Same first-run content as the real app. The couple's illustrations are downloaded into
+// demo/assets/ (git-ignored) on the first build.
+const INITIAL = JSON.parse(fs.readFileSync(path.join(ROOT, 'config', 'matrimonio.json'), 'utf8'));
+const IMAGES = INITIAL.images || {};
 
 fs.rmSync(OUT, { recursive: true, force: true });
 for (const dir of ['css', 'js', 'icon', 'demo', 'img']) fs.mkdirSync(path.join(OUT, dir), { recursive: true });
@@ -64,6 +58,10 @@ for (const f of fs.readdirSync(path.join(PUB, 'icons'))) {
   fs.copyFileSync(path.join(PUB, 'icons', f), path.join(OUT, 'icon', f));
 }
 fs.copyFileSync(path.join(ROOT, 'demo', 'mock.js'), path.join(OUT, 'demo', 'mock.js'));
+fs.writeFileSync(
+  path.join(OUT, 'demo', 'initial.js'),
+  `window.__INITIAL = ${JSON.stringify({ settings: INITIAL.settings, tables: INITIAL.tables })};\n`,
+);
 fs.writeFileSync(
   path.join(OUT, 'qr.svg'),
   await QRCode.toString(DEMO_URL, { type: 'svg', margin: 1, color: { dark: '#2E2A26', light: '#FFFFFF' } }),
@@ -137,6 +135,7 @@ fs.writeFileSync(
   </div>
 </div>
 <div id="toasts" aria-live="polite"></div>
+<script src="demo/initial.js"></script>
 <script src="demo/mock.js"></script>
 <script type="module" src="js/app.js"></script>
 `,

@@ -25,6 +25,7 @@ import * as push from './push.js';
 import * as mail from './mail.js';
 import * as worker from './worker.js';
 import { ACCENTS } from './theme.js';
+import { tableShape, tableSeats, createTables, arrangeTables } from './tables.js';
 import { adminPassword, setAdminCookie, limiter, upload, saveImage, removeUpload, imageExt } from './app.js';
 
 function safeEqual(a, b) {
@@ -195,9 +196,6 @@ function findOrCreateTable(name) {
   return { id: Number(r.lastInsertRowid), created: true };
 }
 
-const tableShape = (v) => (v === 'rect' ? 'rect' : 'round');
-const tableSeats = (v) => Math.max(0, Math.min(30, Math.round(Number(v) || 0)));
-
 const slug = (s) =>
   String(s || '')
     .normalize('NFD')
@@ -366,48 +364,17 @@ export function adminRouter(app) {
 
   // Several numbered tables at once, optionally with the couple's table.
   r.post('/tables/bulk', (req, res) => {
-    const n = Math.max(0, Math.min(60, Math.round(Number(req.body?.count) || 0)));
-    const prefix = cleanText(req.body?.prefix, 40) || 'Tavolo';
-    const seats = tableSeats(req.body?.seats);
-    const insert = db.prepare('INSERT INTO seating_tables(name, sort, shape, seats) VALUES(?, ?, ?, ?)');
-    transaction(() => {
-      if (req.body?.couple && !db.prepare("SELECT 1 FROM seating_tables WHERE shape = 'rect' OR lower(name) LIKE '%spos%'").get()) {
-        db.prepare('UPDATE seating_tables SET sort = sort + 1').run();
-        insert.run('Sposi', 0, 'rect', 2);
-      }
-      const names = new Set(q.allTables.all().map((t) => t.name.toLowerCase()));
-      let sort = count('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM seating_tables');
-      for (let i = 1, made = 0; made < n; i++) {
-        const name = `${prefix} ${i}`;
-        if (names.has(name.toLowerCase())) continue;
-        insert.run(name, sort++, 'round', seats);
-        made++;
-      }
+    createTables({
+      count: req.body?.count,
+      prefix: cleanText(req.body?.prefix, 40) || 'Tavolo',
+      seats: req.body?.seats,
+      couple: !!req.body?.couple,
     });
     res.json({ tables: tableRows() });
   });
 
-  // Couple's table at the top centre, everyone else in rows below it.
   r.post('/tables/arrange', (req, res) => {
-    const all = q.allTables.all();
-    const isCouple = (t) => t.shape === 'rect' || /spos/i.test(t.name);
-    const couple = all.filter(isCouple);
-    const others = all.filter((t) => !isCouple(t));
-    const set = db.prepare('UPDATE seating_tables SET x = ?, y = ? WHERE id = ?');
-    const round1 = (v) => Math.round(v * 10) / 10;
-    transaction(() => {
-      couple.forEach((t, i) => set.run(round1(50 + (i - (couple.length - 1) / 2) * 22), 13, t.id));
-      const cols = others.length <= 4 ? Math.max(1, others.length) : Math.ceil(Math.sqrt(others.length * 2));
-      const rows = Math.max(1, Math.ceil(others.length / cols));
-      others.forEach((t, i) => {
-        const r0 = Math.floor(i / cols);
-        const inRow = Math.min(cols, others.length - r0 * cols);
-        const c = i % cols;
-        const x = 12 + ((c + 0.5) * 76) / cols + ((cols - inRow) * 76) / cols / 2;
-        const y = rows === 1 ? 55 : 35 + (r0 * 48) / (rows - 1);
-        set.run(round1(x), round1(y), t.id);
-      });
-    });
+    arrangeTables();
     res.json({ tables: tableRows() });
   });
 

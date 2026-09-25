@@ -11,31 +11,55 @@ Tutto si gestisce dalla **Regia**, il pannello degli sposi dentro l'app.
 
 ---
 
-## 1. Metterla online (circa 10 minuti, una volta sola)
+## 1. Metterla online (circa 20 minuti, una volta sola)
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/niccoebibi/Claude)
+L'app è **già pronta con i vostri contenuti**: al primo avvio carica da sola il file `config/matrimonio.json`, che contiene:
+- nomi, data e ora (17:00), testo di benvenuto;
+- le schede della Basilica e di Palazzo Brancaccio, con i parcheggi;
+- RSVP entro il 31 gennaio e lista nozze;
+- il vostro stile blu cobalto con i nomi in corsivo, e le illustrazioni del vostro sito;
+- i 19 tavoli già disposti in sala e lo svelamento alle 18:45 del 17 aprile.
 
 L'app gira su **[Render](https://render.com)**. Costa circa **9,50 $ al mese**: 7 $ per il server più 2,50 $ per 10 GB di spazio per le foto. Nel mese del matrimonio può aggiungersi qualche dollaro di traffico, perché oltre i 5 GB inclusi si pagano 0,15 $/GB. Dopo il matrimonio, scaricate le foto e cancellate il servizio.
 
-1. Cliccate il pulsante **Deploy to Render** qui sopra e registratevi (il modo più rapido è **«GitHub»**).
-2. Render legge da solo la configurazione (`render.yaml`) e vi chiede solo **ADMIN_PASSWORD**: è la password della Regia. Sceglietene una robusta e tenetela per voi.
-3. Se richiesto, aggiungete una carta di pagamento (il piano con disco per le foto è a pagamento).
-4. Cliccate **Deploy Blueprint**. Dopo 3–5 minuti l'app è online a un indirizzo tipo `https://matrimonio-xxxx.onrender.com`: lo trovate in alto nella pagina del servizio.
+### Passo 1 · Rendete privato questo repository (consigliato, 30 secondi)
 
-> Volete un indirizzo più bello (es. `niccoloebeatrice.it`)? Compratelo su un qualsiasi registrar (circa 10 €/anno) e aggiungetelo in Render › Settings › Custom Domains.
+Il codice contiene luogo e orario del matrimonio. Su GitHub aprite **Settings › General**, scorrete fino a **Danger Zone**, poi **Change visibility › Make private**.
 
-## 2. Configurare l'app dalla Regia
+### Passo 2 · Mettete online l'app su Render
 
-Aprite il link, toccate **«Area riservata agli sposi»** e inserite la password. La Regia vi mostra una lista «Per iniziare» con i 5 passi:
+1. Andate su [dashboard.render.com](https://dashboard.render.com) e registratevi con **«GitHub»**. Quando GitHub lo chiede, date a Render l'accesso a questo repository.
+2. Cliccate **New › Blueprint** e scegliete il repository `niccoebibi/Claude`. Se il repository è ancora pubblico funziona anche questo link diretto: [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/niccoebibi/Claude)
+3. Render legge da solo la configurazione (`render.yaml`) e vi chiede solo **ADMIN_PASSWORD**: è la password della Regia. Sceglietela voi due e tenetela per voi.
+4. Se richiesto, aggiungete una carta di pagamento, poi cliccate **Deploy Blueprint**.
+5. Dopo 3–5 minuti l'app è online a un indirizzo tipo `https://matrimonio-xxxx.onrender.com`, che trovate in alto nella pagina del servizio. Apritelo per controllare che ci sia tutto.
 
-1. **Contenuti e aspetto:** nomi, data, colore, foto di copertina, testi e schede informative. L'icona dell'app con le vostre iniziali viene creata in automatico.
-2. **Email:** il modo più semplice è Gmail.
+### Passo 3 · Collegate www.17aprile2027.it
+
+1. In Render: **Settings › Custom Domains › Add Custom Domain**, scrivete `www.17aprile2027.it` e salvate. Render aggiunge da solo anche `17aprile2027.it`.
+2. In Aruba, nell'area clienti, aprite **Gestione domini › 17aprile2027.it**:
+   - togliete il **reindirizzamento** (redirect) verso il sito Joy;
+   - in **Gestione DNS** aggiungete un record **CNAME**: nome `www`, valore l'indirizzo Render senza `https://` (es. `matrimonio-xxxx.onrender.com`);
+   - modificate il record **A** del dominio principale (nome `@` o vuoto) con valore **`216.24.57.1`**;
+   - eliminate eventuali record **AAAA**.
+3. Entro 10–60 minuti in Render compare **«Verified»** e il certificato HTTPS viene creato da solo. Da quel momento l'app si apre su **www.17aprile2027.it**.
+
+Il sito Joy resta raggiungibile al suo indirizzo `withjoy.com/niccolo-beatrice-2027`: i pulsanti «Conferma (RSVP)» e «Scopri la lista nozze» dell'app portano già lì. La prima volta che entrate nella Regia dal nuovo indirizzo, l'app lo memorizza e lo usa nelle email e nel QR code.
+
+## 2. Le due cose da fare nella Regia
+
+Aprite l'app, toccate **«Area riservata agli sposi»** e inserite la password. I contenuti sono già al loro posto; mancano solo:
+
+1. **Email** (Regia › Email): il modo più semplice è Gmail.
    - Attivate la *verifica in due passaggi* sul vostro account Google.
    - Aprite [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), create una password per le app chiamata «Matrimonio» e incollatela nella Regia insieme al vostro indirizzo Gmail.
    - Premete **Invia email di prova**. Con Gmail potete inviare fino a 500 email al giorno.
-3. **Tavoli e invitati:** copiate le righe dal vostro Excel o Google Fogli (*Nome e cognome · Tavolo · Email · Posto*) e incollatele in **Importa**. I tavoli si creano da soli. Nella scheda **Piantina** potete caricare la foto della sala e toccare dove si trova ogni tavolo.
-4. **Svelamento dei tavoli:** scegliete giorno e ora e premete **Programma**. Con **Anteprima email** vedete in anteprima cosa riceveranno gli invitati.
-5. **Condividi:** trovate il link, il **messaggio pronto per WhatsApp** e il **QR code** da stampare sulle partecipazioni o sui segnaposto.
+2. **Invitati** (Regia › Tavoli e invitati):
+   - in **Importa** incollate le righe del vostro Excel o Google Fogli (*Nome e cognome · Tavolo · Email · Posto*);
+   - oppure, tavolo per tavolo, usate **«Assegna persone»** nella scheda **Tavoli**;
+   - quando la wedding planner vi dà la planimetria definitiva, caricatela in **Piantina** e spostate tavoli e ingresso con un tocco.
+
+Poi, da **Condividi**, prendete il link, il **messaggio pronto per WhatsApp** e il **QR code** da stampare.
 
 Quando un invitato si registra con lo stesso nome della vostra lista (anche con nome e cognome invertiti), l'app lo collega da sola al suo tavolo.
 
@@ -86,7 +110,8 @@ npm test         # test end-to-end delle API
 |---|---|
 | `ADMIN_PASSWORD` | Password della Regia (obbligatoria in produzione) |
 | `DATA_DIR` | Cartella persistente per database e foto (default `./data`) |
-| `PUBLIC_URL` | Indirizzo pubblico, usato nelle email e nel QR (su Render è automatico) |
+| `PUBLIC_URL` | Indirizzo pubblico, usato nelle email e nel QR (facoltativo: di solito lo riconosce da solo) |
+| `SEED_FILE` | Configurazione iniziale da caricare al primo avvio (default `config/matrimonio.json`) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Facoltative: configurano le email senza passare dalla Regia |
 
 Con Docker: `docker build -t matrimonio . && docker run -p 3000:3000 -v matrimonio-dati:/data -e ADMIN_PASSWORD=… matrimonio`.

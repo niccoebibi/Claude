@@ -2,8 +2,10 @@ import { createApp, adminPassword } from './app.js';
 import { initPush } from './push.js';
 import { startWorker } from './worker.js';
 import { DATA_DIR } from './db.js';
+import { applySeed } from './seed.js';
 
 initPush();
+await applySeed();
 startWorker();
 
 const port = Number(process.env.PORT) || 3000;

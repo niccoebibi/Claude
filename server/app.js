@@ -234,7 +234,7 @@ export function createApp() {
 
   // Remember the public address so emails and QR codes link to the right place.
   app.use((req, res, next) => {
-    if (req.isAdmin && !process.env.PUBLIC_URL && !process.env.RENDER_EXTERNAL_URL) {
+    if (req.isAdmin && !process.env.PUBLIC_URL) {
       const url = `${req.protocol}://${req.get('host')}`;
       if (getSettings().publicUrl !== url) setSettings({ publicUrl: url });
     }
