@@ -17,17 +17,22 @@ export function addClient(req, res, { guestId, isAdmin }) {
   req.on('close', () => clients.delete(client));
 }
 
-function send(client, event, data) {
+const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+
+function write(client, text) {
   try {
-    client.res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    client.res.write(text);
   } catch {
     clients.delete(client);
   }
 }
 
-/** Broadcast to everyone (optionally filtered). */
+const send = (client, event, data) => write(client, frame(event, data));
+
+/** Broadcast to everyone (optionally filtered). The message is encoded once for all. */
 export function broadcast(event, data, filter) {
-  for (const c of clients) if (!filter || filter(c)) send(c, event, data);
+  const text = frame(event, data);
+  for (const c of clients) if (!filter || filter(c)) write(c, text);
 }
 
 /** Board events are visible to guests only while the live board is open. */

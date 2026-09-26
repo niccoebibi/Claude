@@ -404,24 +404,38 @@ test('quiz: answers stay secret, trophies for all, a leaderboard frozen at the b
   assert.equal((await mario.post('/api/quiz/answer', { index: 1, choice: 5 })).status, 400);
   const last = await mario.post('/api/quiz/answer', { index: 1, choice: 0 });
   assert.equal(last.data.trophy, 'classic', 'a trophy for everyone who finishes');
-  assert.deepEqual(last.data.me.quiz, { answered: 2, score: 1, done: true, place: 1 }, 'alone, so first for now');
+  const { time: marioTime, ...marioQuiz } = last.data.me.quiz;
+  assert.deepEqual(marioQuiz, { answered: 2, score: 1, done: true, place: 1 }, 'alone, so first for now');
+  assert.ok(marioTime >= 0);
   const review = (await mario.get('/api/quiz')).data.questions[0];
   assert.deepEqual([review.chosen, review.correct, review.answer], [0, false, undefined], 'own answers only, never the right one');
 
+  // Giulia gets everything right but takes her time; Anna, later, is just as good and quicker.
+  const giulia = client();
+  await giulia.post('/api/register', { name: 'Giulia Neri', email: 'giulia@example.com' });
+  await giulia.post('/api/quiz/start');
+  await giulia.post('/api/quiz/answer', { index: 0, choice: 1 });
+  await sleep(400);
+  const slow = await giulia.post('/api/quiz/answer', { index: 1, choice: 0 });
+  assert.ok(slow.data.me.quiz.time >= 400, 'the clock ran while she thought');
+
+  await anna.post('/api/quiz/start');
   const right = await anna.post('/api/quiz/answer', { index: 0, choice: 1 });
   assert.deepEqual([right.data.correct, right.data.fact], [true, 'Era B']);
   const annaDone = await anna.post('/api/quiz/answer', { index: 1, choice: 0 });
   assert.equal(annaDone.data.trophy, 'shiny');
-  assert.equal(annaDone.data.place, 1, 'more right answers: she overtakes Mario');
+  assert.equal(annaDone.data.place, 1, 'same score as Giulia but quicker, though she finished later');
   const board = (await mario.get('/api/quiz')).data;
-  assert.equal(board.place, 2);
+  assert.equal(board.place, 3);
   assert.deepEqual(
     board.leaderboard.map((r) => [r.name, r.score, r.shiny, r.me]),
     [
       ['Anna Bianchi', 2, true, false],
+      ['Giulia Neri', 2, true, false],
       ['Mario Rossi', 1, false, true],
     ],
   );
+  assert.ok(board.leaderboard.every((r) => Number.isFinite(r.time)), 'times are shown');
   assert.equal((await anna.get('/api/state')).data.me.trophy, 'shiny');
 
   // The trophy shows next to the name in the Chat LIVE.
@@ -431,8 +445,8 @@ test('quiz: answers stay secret, trophies for all, a leaderboard frozen at the b
   assert.equal(list.find((m) => m.id === msg.id).trophy, 'shiny');
 
   const stats = (await admin.get('/api/admin/overview')).data.quiz;
-  assert.deepEqual([stats.finished, stats.shiny, stats.prizes], [2, 1, 3]);
-  assert.deepEqual(stats.winners.map((w) => w.name), ['Anna Bianchi', 'Mario Rossi'], 'the couple sees who wins the prizes');
+  assert.deepEqual([stats.finished, stats.shiny, stats.prizes], [3, 2, 3]);
+  assert.deepEqual(stats.winners.map((w) => w.name), ['Anna Bianchi', 'Giulia Neri', 'Mario Rossi'], 'the couple sees who wins the prizes');
 
   // Bouquet toss: the podium is final, later games do not count for it.
   await admin.post('/api/admin/quiz/close', { closed: true });
@@ -442,7 +456,7 @@ test('quiz: answers stay secret, trophies for all, a leaderboard frozen at the b
   await luca.post('/api/quiz/answer', { index: 0, choice: 1 });
   const late = await luca.post('/api/quiz/answer', { index: 1, choice: 0 });
   assert.deepEqual([late.data.trophy, late.data.place], ['shiny', null], 'trophy yes, podium no');
-  assert.deepEqual((await admin.get('/api/admin/overview')).data.quiz.winners.map((w) => w.name), ['Anna Bianchi', 'Mario Rossi']);
+  assert.deepEqual((await admin.get('/api/admin/overview')).data.quiz.winners.map((w) => w.name), ['Anna Bianchi', 'Giulia Neri', 'Mario Rossi']);
 
   await admin.post('/api/admin/quiz/reset');
   assert.equal((await client().get('/api/state')).data.settings.quiz.closed, false, 'a reset reopens the game');

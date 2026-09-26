@@ -1268,6 +1268,10 @@ async function adminContent(main) {
 /* ================================================================== */
 
 const QUIZ_OPTIONS = 5;
+const duration = (ms) => {
+  const sec = Math.max(1, Math.round(ms / 1000));
+  return sec < 60 ? `${sec}″` : `${Math.floor(sec / 60)}′${String(sec % 60).padStart(2, '0')}″`;
+};
 // Same list as EFFECTS in effects.js, which is loaded only when an effect plays.
 const QUIZ_EFFECTS = {
   drago: '🐉 Drago sputafuoco',
@@ -1354,14 +1358,14 @@ async function adminQuiz(main) {
               <p class="small muted">${
                 st.closedAt
                   ? `Classifica chiusa ${esc(fmtDateTime(new Date(st.closedAt).toISOString(), tz()))}: questi sono i vincitori.`
-                  : `Più risposte giuste, poi chi ha finito prima. Al lancio del bouquet chiudete la classifica: i primi ${st.prizes} vincono.`
+                  : `Più risposte giuste, poi chi ci ha messo meno. Al lancio del bouquet chiudete la classifica: i primi ${st.prizes} vincono.`
               }</p>
               ${
                 st.winners.length
                   ? `<ol class="mates podium">${st.winners
                       .map(
                         (w, k) =>
-                          `<li><span class="medal">${medals[k] || '🏅'}</span><span class="pd-name">${esc(w.name)}</span><span class="pd-score">${w.score}/${quiz.questions.length}</span></li>`,
+                          `<li><span class="medal">${medals[k] || '🏅'}</span><span class="pd-name">${esc(w.name)}</span><span class="pd-score">${w.score}/${quiz.questions.length}${w.time != null ? `<small>${duration(w.time)}</small>` : ''}</span></li>`,
                       )
                       .join('')}</ol>`
                   : '<p class="muted">Ancora nessuno ha finito il gioco.</p>'

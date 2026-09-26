@@ -1600,6 +1600,11 @@ function quizCardHTML() {
 }
 
 const LETTERS = 'ABCDEF';
+/** 3′05″ */
+const fmtDuration = (ms) => {
+  const sec = Math.max(1, Math.round(ms / 1000));
+  return sec < 60 ? `${sec}″` : `${Math.floor(sec / 60)}′${String(sec % 60).padStart(2, '0')}″`;
+};
 const MEDALS = ['🥇', '🥈', '🥉'];
 const PLACES = ['Primo', 'Secondo', 'Terzo', 'Quarto', 'Quinto', 'Sesto', 'Settimo', 'Ottavo', 'Nono', 'Decimo'];
 
@@ -1625,7 +1630,7 @@ function prizeHTML(qz) {
   }
   const text = n === 1 ? 'Il primo in classifica vince un premio!' : `I primi ${n} in classifica vincono un premio!`;
   return `<div class="quiz-prize"><span class="qp-gift" aria-hidden="true">🎁</span><b>${text}</b>
-    <small>Più risposte giuste, più sali; a pari punti vince chi finisce prima. Vale la classifica al lancio del bouquet 💐</small></div>`;
+    <small>Più risposte giuste, più sali; a pari punti vince chi ci ha messo meno. Vale la classifica al lancio del bouquet 💐</small></div>`;
 }
 
 const RIGHT_WORDS = ['🎉 Esatto!', '🎯 Centro!', '💙 Li conosci bene!', '✨ Giusto!', '🥂 Perfetto!'];
@@ -1677,11 +1682,16 @@ async function viewQuiz(main) {
         <ul class="quiz-rules">
           <li><span>❓</span> ${total} domande su Niccolò e Beatrice</li>
           <li><span>☝️</span> Un solo tentativo: le risposte non si cambiano</li>
+          <li><span>⏱️</span> Il tempo parte adesso: a pari punti vince chi ci mette meno</li>
           <li><span>🏆</span> Un trofeo accanto al tuo nome per tutti, brillante per chi indovina tutto</li>
         </ul>
         <button class="btn primary block big" id="quiz-start">Inizia il gioco</button>
       </section></div>`;
-    $('#quiz-start', main).addEventListener('click', () => showQuestion(0));
+    $('#quiz-start', main).addEventListener('click', async (e) => {
+      e.currentTarget.disabled = true;
+      await api('/api/quiz/start', { method: 'POST' }).catch(() => {});
+      showQuestion(0);
+    });
   };
 
   const showQuestion = (i) => {
@@ -1760,7 +1770,7 @@ async function viewQuiz(main) {
         <div class="qc-trophy big">${trophySVG(data.trophy)}</div>
         <div class="qc-label">${trophyTitle(data.trophy)}</div>
         <h2 class="qc-title">${headline}</h2>
-        <p class="qr-score">Hai indovinato <b>${data.score}</b> risposte su <b>${total}</b></p>
+        <p class="qr-score">Hai indovinato <b>${data.score}</b> risposte su <b>${total}</b>${data.time != null ? ` in <b>${fmtDuration(data.time)}</b>` : ''}</p>
         ${data.prizes ? placeHTML(data.place, { prizes: data.prizes, closed: data.closed }, true) : ''}
         <p class="muted">${comment}</p>
         ${shiny ? '' : '<p class="small muted">Il trofeo brillante va solo a chi indovina tutte le risposte ✨</p>'}
@@ -1769,29 +1779,17 @@ async function viewQuiz(main) {
       </section>
       <section class="card champions">
         <h3 class="card-title small-title">🏆 Classifica</h3>
-        <p class="small muted">${data.closed ? 'Chiusa al lancio del bouquet' : 'Più risposte giuste, più sali; a pari punti vince chi finisce prima'}</p>
+        <p class="small muted">${data.closed ? 'Chiusa al lancio del bouquet' : 'Più risposte giuste, più sali; a pari punti vince chi ci ha messo meno'}</p>
         ${
           data.leaderboard.length
             ? `<ol class="mates podium">${data.leaderboard
                 .map(
                   (r, k) =>
-                    `<li class="${r.me ? 'me' : ''}"><span class="medal" aria-hidden="true">${MEDALS[k] || `${k + 1}°`}</span><span class="avatar sm" style="background:${colorFor(r.name)}">${esc(initials(r.name))}</span><span class="pd-name">${esc(r.name)}${r.shiny ? trophyBadge('shiny', 'trophy-mini') : ''}</span><span class="pd-score">${r.score}/${total}</span>${k < data.prizes ? '<span class="pd-prize">🎁</span>' : ''}</li>`,
+                    `<li class="${r.me ? 'me' : ''}"><span class="medal" aria-hidden="true">${MEDALS[k] || `${k + 1}°`}</span><span class="avatar sm" style="background:${colorFor(r.name)}">${esc(initials(r.name))}</span><span class="pd-name">${esc(r.name)}${r.shiny ? trophyBadge('shiny', 'trophy-mini') : ''}</span><span class="pd-score">${r.score}/${total}${r.time != null ? `<small>${fmtDuration(r.time)}</small>` : ''}</span>${k < data.prizes ? '<span class="pd-prize">🎁</span>' : ''}</li>`,
                 )
                 .join('')}</ol>`
             : '<p class="muted">Ancora nessuno: tocca agli altri invitati!</p>'
         }
-      </section>
-      <section class="card review">
-        <h3 class="card-title small-title">Le tue risposte</h3>
-        <p class="small muted">Quelle giuste restano un segreto: niente spoiler agli altri invitati 🤫</p>
-        <ol class="review-list">${data.questions
-          .map((item) => {
-            const ok = item.correct;
-            return `<li class="${ok ? 'ok' : 'ko'}"><span class="rv-emoji" aria-hidden="true">${esc(item.emoji || '❓')}</span>
-              <div><b>${esc(item.text)}</b>
-              <div class="rv-answer">${ok ? '✓' : '✗'} ${esc(item.options[item.chosen] ?? '')}</div></div></li>`;
-          })
-          .join('')}</ol>
       </section>
     </div>`;
     if (celebrate) {

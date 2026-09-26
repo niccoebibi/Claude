@@ -1,6 +1,6 @@
 // "Il gioco degli sposi": a quiz about the couple in every guest's profile.
 // Everyone who finishes gets a trophy; answering everything right earns the shiny one.
-// The leaderboard ranks by right answers, then by who finished first: the top few
+// The leaderboard ranks by right answers, then by time spent playing: the top few
 // (quiz.prizes) win a prize if nobody overtakes them before the couple closes it
 // at the bouquet toss.
 // The right answers never leave the server, so guests cannot pass them around:
@@ -11,6 +11,9 @@ import { fileURLToPath } from 'node:url';
 import { db, q, getSettings, setSettings, cleanText } from './db.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// Time counts from "Inizia" to the last answer; a long pause counts as three minutes at most,
+// so nobody is penalised for putting the phone away and finishing another day.
+const MAX_STEP_MS = 3 * 60 * 1000;
 // Special celebrations a right answer can trigger (public/js/effects.js).
 const EFFECTS = ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi', 'viaggio', 'macellaio', 'trattore', 'campanello', 'medaglie', 'gattina', 'racchetta', 'sveglia', 'auto', 'aeroplanini'];
 
@@ -46,14 +49,14 @@ export function sanitizeQuiz(v) {
   };
 }
 
-/** The leaderboard: most right answers first, then who finished first. Frozen once closed. */
+/** The leaderboard: most right answers first, then the quickest. Frozen once closed. */
 export function ranking() {
   const closedAt = getSettings().quizClosedAt;
   return db
     .prepare(
-      `SELECT id, name, quiz_score AS score, quiz_done_at AS at, trophy FROM guests
+      `SELECT id, name, quiz_score AS score, quiz_time_ms AS time, quiz_done_at AS at, trophy FROM guests
        WHERE quiz_done_at IS NOT NULL ${closedAt ? 'AND quiz_done_at <= ?' : ''}
-       ORDER BY quiz_score DESC, quiz_done_at, id`,
+       ORDER BY quiz_score DESC, COALESCE(quiz_time_ms, 9e15), quiz_done_at, id`,
     )
     .all(...(closedAt ? [closedAt] : []));
 }
@@ -69,7 +72,7 @@ const signature = (quiz) =>
 /** Saving different questions restarts the games in progress; finished trophies stay. */
 export function onQuizSaved(before, after) {
   if (signature(before) !== signature(after)) {
-    db.prepare('UPDATE guests SET quiz_answers = NULL WHERE quiz_done_at IS NULL').run();
+    db.prepare('UPDATE guests SET quiz_answers = NULL, quiz_time_ms = NULL, quiz_last_at = NULL WHERE quiz_done_at IS NULL').run();
   }
 }
 
@@ -103,7 +106,7 @@ export function quizMe(g) {
   const quiz = getSettings().quiz;
   const total = quiz?.questions?.length || 0;
   const answered = g.quiz_done_at ? total : answersOf(g, total).filter((a) => a !== null).length;
-  return { answered, score: g.quiz_score ?? 0, done: !!g.quiz_done_at, place: g.quiz_done_at ? placeOf(g) : null };
+  return { answered, score: g.quiz_score ?? 0, done: !!g.quiz_done_at, place: g.quiz_done_at ? placeOf(g) : null, time: g.quiz_time_ms ?? null };
 }
 
 export function registerQuizRoutes(app, { meJson }) {
@@ -111,6 +114,16 @@ export function registerQuizRoutes(app, { meJson }) {
     const quiz = getSettings().quiz;
     return quiz?.enabled && quiz.questions?.length ? quiz : null;
   };
+
+  // "Inizia il gioco": the clock starts.
+  app.post('/api/quiz/start', (req, res) => {
+    if (!active()) return res.status(404).json({ error: 'Il gioco non è disponibile' });
+    if (!req.guest) return res.status(401).json({ error: 'Registrati per giocare' });
+    db.prepare(
+      'UPDATE guests SET quiz_last_at = ?, quiz_time_ms = 0 WHERE id = ? AND quiz_done_at IS NULL AND quiz_last_at IS NULL',
+    ).run(Date.now(), req.guest.id);
+    res.json({ ok: true });
+  });
 
   app.get('/api/quiz', (req, res) => {
     const quiz = active();
@@ -135,11 +148,12 @@ export function registerQuizRoutes(app, { meJson }) {
       })),
       score: g.quiz_score ?? 0,
       done: !!g.quiz_done_at,
+      time: g.quiz_time_ms ?? null,
       trophy: g.trophy || null,
       place: g.quiz_done_at ? placeOf(g) : null,
       leaderboard: ranking()
         .slice(0, 10)
-        .map((r) => ({ name: r.name, score: r.score, shiny: r.trophy === 'shiny', me: r.id === g.id })),
+        .map((r) => ({ name: r.name, score: r.score, time: r.time, shiny: r.trophy === 'shiny', me: r.id === g.id })),
       players: db.prepare('SELECT COUNT(*) AS n FROM guests WHERE quiz_done_at IS NOT NULL').get().n,
     });
   });
@@ -164,13 +178,11 @@ export function registerQuizRoutes(app, { meJson }) {
     const score = answers.filter((a, i) => a === quiz.questions[i].answer).length;
     const done = answers.every((a) => a !== null);
     const trophy = done ? (score === total ? 'shiny' : 'classic') : null;
-    db.prepare('UPDATE guests SET quiz_answers = ?, quiz_score = ?, quiz_done_at = ?, trophy = ? WHERE id = ?').run(
-      JSON.stringify(answers),
-      score,
-      done ? Date.now() : null,
-      trophy,
-      g.id,
-    );
+    const now = Date.now();
+    const time = (g.quiz_time_ms ?? 0) + (g.quiz_last_at ? Math.min(now - g.quiz_last_at, MAX_STEP_MS) : 0);
+    db.prepare(
+      'UPDATE guests SET quiz_answers = ?, quiz_score = ?, quiz_done_at = ?, trophy = ?, quiz_time_ms = ?, quiz_last_at = ? WHERE id = ?',
+    ).run(JSON.stringify(answers), score, done ? now : null, trophy, time, now, g.id);
     res.json({
       correct: choice === item.answer,
       // The curiosity often gives the answer away: only for who got it right.
@@ -195,12 +207,14 @@ export function quizStats() {
     // Who to hand the prizes to, in order (final once the leaderboard is closed).
     winners: ranking()
       .slice(0, getSettings().quiz?.prizes || 0)
-      .map((r) => ({ name: r.name, score: r.score, at: r.at })),
+      .map((r) => ({ name: r.name, score: r.score, time: r.time, at: r.at })),
   };
 }
 
 export function resetQuizResults() {
-  db.prepare('UPDATE guests SET quiz_answers = NULL, quiz_score = NULL, quiz_done_at = NULL, trophy = NULL').run();
+  db.prepare(
+    'UPDATE guests SET quiz_answers = NULL, quiz_score = NULL, quiz_done_at = NULL, trophy = NULL, quiz_time_ms = NULL, quiz_last_at = NULL',
+  ).run();
   setSettings({ quizClosedAt: null });
 }
 

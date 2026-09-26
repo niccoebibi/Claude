@@ -92,7 +92,15 @@ const tableColumns = db.prepare('PRAGMA table_info(seating_tables)').all().map((
 if (!tableColumns.includes('shape')) db.exec("ALTER TABLE seating_tables ADD COLUMN shape TEXT NOT NULL DEFAULT 'round'");
 if (!tableColumns.includes('seats')) db.exec('ALTER TABLE seating_tables ADD COLUMN seats INTEGER NOT NULL DEFAULT 0');
 const guestColumns = db.prepare('PRAGMA table_info(guests)').all().map((c) => c.name);
-for (const [col, type] of [['quiz_answers', 'TEXT'], ['quiz_score', 'INTEGER'], ['quiz_done_at', 'INTEGER'], ['trophy', 'TEXT']]) {
+for (const [col, type] of [
+  ['quiz_answers', 'TEXT'],
+  ['quiz_score', 'INTEGER'],
+  ['quiz_done_at', 'INTEGER'],
+  ['trophy', 'TEXT'],
+  // Time spent playing: ties on the leaderboard go to whoever was quicker.
+  ['quiz_time_ms', 'INTEGER'],
+  ['quiz_last_at', 'INTEGER'],
+]) {
   if (!guestColumns.includes(col)) db.exec(`ALTER TABLE guests ADD COLUMN ${col} ${type}`);
 }
 

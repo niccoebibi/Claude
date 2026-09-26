@@ -116,6 +116,36 @@ export const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024, files: 4, fields: 10 },
 });
 
+/**
+ * Uploads are held in memory while they arrive: when a whole room posts photos at once,
+ * take a few at a time and queue the rest (phones just see a slightly longer progress bar).
+ */
+export function uploadGate(max = 6) {
+  let active = 0;
+  const waiting = [];
+  const release = () => {
+    active--;
+    if (waiting.length) waiting.shift()();
+  };
+  return (req, res, next) => {
+    const go = () => {
+      active++;
+      let done = false;
+      const finish = () => {
+        if (!done) {
+          done = true;
+          release();
+        }
+      };
+      res.on('finish', finish);
+      res.on('close', finish);
+      next();
+    };
+    if (active < max) go();
+    else waiting.push(go);
+  };
+}
+
 export function imageExt(buf) {
   if (!buf || buf.length < 12) return null;
   if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpg';
@@ -332,7 +362,9 @@ export function createApp() {
   app.get('/api/state', (req, res) => res.json(statePayload(req)));
 
   // Generous: on the wedding day many guests share the venue Wi-Fi (one IP).
-  const authLimit = limiter(300, 10 * 60000);
+  // Generous per address: at the venue every phone on the Wi-Fi shares one. Login codes
+  // are protected separately (a few attempts per code).
+  const authLimit = limiter(2000, 10 * 60000);
 
   app.post('/api/register', authLimit, async (req, res) => {
     const name = cleanText(req.body?.name, 80).replace(/\s+/g, ' ');
@@ -471,7 +503,7 @@ export function createApp() {
     res.json({ ok: true });
   });
 
-  app.post('/api/push/test', limiter(10, 60000), async (req, res) => {
+  app.post('/api/push/test', limiter(10, 60000, (req) => (req.guest ? `g${req.guest.id}` : req.ip)), async (req, res) => {
     if (!req.guest) return res.status(401).json({ error: 'Non registrato' });
     const n = await push.sendToGuest(req.guest.id, {
       title: '🔔 Notifiche attive!',
@@ -533,6 +565,7 @@ export function createApp() {
       : { guestId: req.guest.id, name: req.guest.name, isAdmin: 0 };
 
   const postLimit = limiter(20, 30000, (req) => (req.guest ? `g${req.guest.id}` : req.ip));
+  const photoGate = uploadGate(6);
 
   function insertMessage(a, fields) {
     const r = db
@@ -573,6 +606,7 @@ export function createApp() {
     '/api/photos',
     requireUser,
     postLimit,
+    photoGate,
     upload.fields([
       { name: 'photo', maxCount: 1 },
       { name: 'thumb', maxCount: 1 },

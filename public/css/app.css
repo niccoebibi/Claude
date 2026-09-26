@@ -3221,35 +3221,6 @@ body.screen-mode .tabbar {
   font-size: 1.05rem;
   margin: 0 0 4px;
 }
-.review-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-.review-list li {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  font-size: 0.92rem;
-}
-.rv-emoji {
-  width: 32px;
-  flex: none;
-  text-align: center;
-  font-size: 1.3rem;
-}
-.rv-answer {
-  margin-top: 2px;
-}
-.review-list li.ok .rv-answer {
-  color: #2f7d4d;
-}
-.review-list li.ko .rv-answer {
-  color: #b5463c;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .trophy .shine,
   .trophy .tw,
@@ -3792,6 +3763,14 @@ body.screen-mode .tabbar {
   font-weight: 700;
   font-size: 0.85rem;
   color: var(--ink-2);
+  text-align: right;
+  line-height: 1.2;
+}
+.pd-score small {
+  display: block;
+  font-weight: 500;
+  font-size: 0.72rem;
+  color: var(--muted);
 }
 
 /* Butcher, tractor, trip */

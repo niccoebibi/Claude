@@ -27,7 +27,7 @@ import * as worker from './worker.js';
 import { ACCENTS } from './theme.js';
 import { tableShape, tableSeats, createTables, arrangeTables } from './tables.js';
 import { sanitizeQuiz, onQuizSaved, quizStats, resetQuizResults, closeQuiz } from './quiz.js';
-import { adminPassword, setAdminCookie, limiter, upload, saveImage, removeUpload, imageExt } from './app.js';
+import { adminPassword, setAdminCookie, upload, saveImage, removeUpload, imageExt } from './app.js';
 
 function safeEqual(a, b) {
   const ha = crypto.createHash('sha256').update(String(a)).digest();
@@ -209,8 +209,16 @@ const slug = (s) =>
 export function adminRouter(app) {
   const r = express.Router();
 
-  r.post('/login', limiter(10, 15 * 60000), (req, res) => {
+  // Only wrong passwords count: guests trying the button at the venue (one shared address)
+  // must not lock the couple out.
+  const failures = new Map();
+  setInterval(() => failures.clear(), 15 * 60000).unref();
+  r.post('/login', (req, res) => {
+    if ((failures.get(req.ip) || 0) >= 20) {
+      return res.status(429).json({ error: 'Troppi tentativi, riprova tra qualche minuto.' });
+    }
     if (!safeEqual(String(req.body?.password || ''), adminPassword())) {
+      failures.set(req.ip, (failures.get(req.ip) || 0) + 1);
       return res.status(401).json({ error: 'Password errata' });
     }
     setAdminCookie(req, res);

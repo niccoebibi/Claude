@@ -4,7 +4,7 @@ Un'unica app, che gli invitati aprono da un link o da un QR code (nessun App Sto
 
 - **Prima del matrimonio:** informazioni (cerimonia, ricevimento, programma, dress code, lista nozze, contatti) e conto alla rovescia.
 - **Svelamento dei tavoli:** all'ora che scegliete, ogni invitato riceve una **notifica sul telefono** e un'**email** con il suo tavolo, il posto, chi siede con lui e la piantina della sala con il suo tavolo evidenziato.
-- **Il gioco degli sposi:** nel profilo di ogni invitato un quiz su di voi, con emoji e coriandoli a ogni risposta giusta, e alcuni effetti speciali in stile videogioco anni '90 (un drago sputafuoco, una pioggia di anelli d'oro, un ballerino, una bamboletta al mare, la campana della borsa, i fulmini, un brindisi, un macellaio, un trattore, un aereo con lo striscione) e altri più eleganti, dorati o rosa (un campanello d'oro, tre medaglie, una gattina DJ, una racchetta, una sveglia, una macchinina, due aeroplanini che disegnano un cuore) che scegliete voi domanda per domanda. Le risposte giuste restano segrete, così nessuno le passa agli altri. Chi lo finisce riceve un **trofeo** accanto al nome (anche nella chat LIVE); chi indovina tutto, il **trofeo brillante** e un posto nell'albo d'oro. I **primi 3 in classifica** (più risposte giuste; a pari punti chi ha finito prima) vincono un premio: al lancio del bouquet premete «Chiudi la classifica» nella Regia e il podio diventa definitivo.
+- **Il gioco degli sposi:** nel profilo di ogni invitato un quiz su di voi, con emoji e coriandoli a ogni risposta giusta, e alcuni effetti speciali in stile videogioco anni '90 (un drago sputafuoco, una pioggia di anelli d'oro, un ballerino, una bamboletta al mare, la campana della borsa, i fulmini, un brindisi, un macellaio, un trattore, un aereo con lo striscione) e altri più eleganti, dorati o rosa (un campanello d'oro, tre medaglie, una gattina DJ, una racchetta, una sveglia, una macchinina, due aeroplanini che disegnano un cuore) che scegliete voi domanda per domanda. Le risposte giuste restano segrete, così nessuno le passa agli altri. Chi lo finisce riceve un **trofeo** accanto al nome (anche nella chat LIVE); chi indovina tutto, il **trofeo brillante**. I **primi 3 in classifica** (più risposte giuste; a pari punti chi ci ha messo meno) vincono un premio: al lancio del bouquet premete «Chiudi la classifica» nella Regia e il podio diventa definitivo.
 - **Il giorno del matrimonio:** con un tasto la trasformate nella **chat LIVE**: messaggi e foto in diretta, cuoricini, galleria, annunci degli sposi e uno **schermo per il proiettore**.
 - **Dopo:** scaricate tutte le foto e i messaggi in un file .zip.
 
@@ -80,6 +80,22 @@ Non c'è niente da scaricare dagli store: basta aprire il link o inquadrare il Q
 - **Annuncio a tutti:** per esempio «Tra 10 minuti il taglio della torta!». Arriva come notifica, compare nell'app e, se volete, anche via email.
 - **Schermo per proiettore:** apritelo da un computer collegato a un proiettore o a una TV. Mostra le foto a rotazione, le nuove appena arrivano, i messaggi e il QR code per partecipare.
 - Potete eliminare qualsiasi foto o messaggio (icona del cestino), oppure mettere in pausa foto e chat.
+- **Lancio del bouquet:** in Regia › Il gioco degli sposi premete «Chiudi la classifica»: il podio di quel momento vince i premi.
+
+### Reggerà 150–170 invitati tutti insieme?
+
+Sì. L'abbiamo provato simulando 170 invitati collegati alla stessa rete nello stesso momento: svelamento dei tavoli, un messaggio a testa nella chat LIVE, 60 foto caricate insieme e tutti che giocano al quiz. Il risultato:
+- nessun errore;
+- l'avviso dei tavoli arriva a tutti in meno di un decimo di secondo;
+- ogni messaggio arriva su tutti i telefoni;
+- il server usa meno di 200 MB dei 512 disponibili.
+
+Anche con il doppio degli invitati, 340, non ci sono errori. Per ripetere la prova: `node scripts/load-test.mjs 170`.
+
+Tre accortezze che non dipendono dall'app:
+1. **Rete in sala.** È il vero punto debole: nei palazzi storici il segnale del telefono può essere scarso. Chiedete a Palazzo Brancaccio se c'è un Wi-Fi per gli ospiti che regga un centinaio di telefoni, e mettete nome e password del Wi-Fi sui cartoncini con il QR code.
+2. **Niente modifiche il giorno delle nozze.** Ogni aggiornamento del codice riavvia l'app per un paio di minuti, perché i dati stanno su un disco e Render non può tenerla accesa durante il riavvio. Fate le ultime modifiche entro qualche giorno prima; per stare tranquilli, su Render mettete *Auto-Deploy* su *Off* nella settimana del matrimonio.
+3. **Registrazione a casa.** Mandate il link qualche settimana prima, così quasi tutti arrivano già registrati e con le notifiche attive; la sala serve solo per chat, foto e gioco.
 
 ## 5. Dopo il matrimonio
 
@@ -107,6 +123,7 @@ App Node.js 22 senza passaggio di build: Express, SQLite integrato (`node:sqlite
 npm install
 npm run dev      # http://localhost:3000, password Regia: admin; le email finiscono in data/outbox
 npm test         # test end-to-end delle API
+node scripts/load-test.mjs 170   # prova di carico: 170 invitati tutti insieme
 ```
 
 | Variabile | Uso |
