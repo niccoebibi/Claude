@@ -3868,3 +3868,60 @@ body.screen-mode .tabbar {
     opacity: 0;
   }
 }
+
+/* Smooth celebrations: gold for Niccolò, sweet pink for Beatrice */
+.fx-smooth {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.fx-smooth.on {
+  opacity: 1;
+}
+.fx-gold {
+  background: radial-gradient(circle at 50% 45%, rgba(58, 40, 7, 0.9), rgba(10, 7, 1, 0.97));
+}
+.fx-pink {
+  background: linear-gradient(165deg, rgba(255, 232, 242, 0.97), rgba(255, 210, 230, 0.97) 55%, rgba(238, 222, 255, 0.97));
+}
+.fx-dusk {
+  background: linear-gradient(170deg, rgba(255, 246, 230, 0.97), rgba(255, 226, 238, 0.97));
+}
+.fx-caption {
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  right: 12px;
+  top: 17%;
+  text-align: center;
+  font-family: 'Italianno', var(--serif);
+  font-size: clamp(52px, 16vw, 92px);
+  line-height: 0.95;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.3s,
+    transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+.fx-caption.show {
+  opacity: 1;
+  transform: none;
+}
+.fx-caption.gold {
+  color: #f5d77a;
+  text-shadow:
+    0 2px 0 #7a560c,
+    0 0 26px rgba(255, 215, 120, 0.55);
+}
+.fx-caption.pink {
+  color: #ff4f9a;
+  text-shadow:
+    0 3px 0 #ffffff,
+    0 0 22px rgba(255, 120, 170, 0.45);
+}
+.fx-caption.duo {
+  background: linear-gradient(90deg, #c9981f, #ff5c9a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  top: 12%;
+}

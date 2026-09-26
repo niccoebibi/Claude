@@ -12,7 +12,7 @@ import { db, q, getSettings, setSettings, cleanText } from './db.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Special celebrations a right answer can trigger (public/js/effects.js).
-const EFFECTS = ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi', 'viaggio', 'macellaio', 'trattore'];
+const EFFECTS = ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi', 'viaggio', 'macellaio', 'trattore', 'campanello', 'medaglie', 'gattina', 'racchetta', 'sveglia', 'auto', 'aeroplanini'];
 
 export function sanitizeQuiz(v) {
   if (!v || typeof v !== 'object') return null;

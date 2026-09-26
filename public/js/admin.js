@@ -1280,6 +1280,13 @@ const QUIZ_EFFECTS = {
   viaggio: '✈️ Aereo con striscione',
   macellaio: '🔪 Macellaio al lavoro',
   trattore: '🚜 Trattore stile videogioco',
+  campanello: "🛎️ Campanello d'oro",
+  medaglie: "🥇 Tre medaglie d'oro (scritta: tre emoji)",
+  gattina: '🐱 Gattina DJ',
+  racchetta: '🎾 Racchetta rosa',
+  sveglia: '⏰ Sveglia kawaii',
+  auto: '🚗 Macchinina rosa',
+  aeroplanini: '💞 Aeroplanini a cuore',
 };
 
 function questionEditor(item, i, n) {

@@ -288,7 +288,7 @@
           options: kept.map((o) => o.text),
           answer: Math.max(0, kept.findIndex((o) => o.i === Number(item.answer))),
           fact: String(item.fact || '').trim(),
-          effect: ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi', 'viaggio', 'macellaio', 'trattore'].includes(item.effect) ? item.effect : '',
+          effect: ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi', 'viaggio', 'macellaio', 'trattore', 'campanello', 'medaglie', 'gattina', 'racchetta', 'sveglia', 'auto', 'aeroplanini'].includes(item.effect) ? item.effect : '',
           effectLabel: String(item.effectLabel || '').trim().slice(0, 24),
         };
       })

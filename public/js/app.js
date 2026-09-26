@@ -1710,7 +1710,7 @@ async function viewQuiz(main) {
       if (!btn || busy) return;
       busy = true;
       const choice = Number(btn.dataset.k);
-      if (item.effect === 'borsa') unlockAudio(); // the bell rings after the server answers
+      if (['borsa', 'campanello'].includes(item.effect)) unlockAudio(); // the bells ring after the server answers
       btn.classList.add('picked');
       opts.forEach((b) => (b.disabled = true));
       let r;
