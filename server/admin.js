@@ -26,6 +26,7 @@ import * as mail from './mail.js';
 import * as worker from './worker.js';
 import { ACCENTS } from './theme.js';
 import { tableShape, tableSeats, createTables, arrangeTables } from './tables.js';
+import { sanitizeQuiz, onQuizSaved, quizStats, resetQuizResults } from './quiz.js';
 import { adminPassword, setAdminCookie, limiter, upload, saveImage, removeUpload, imageExt } from './app.js';
 
 function safeEqual(a, b) {
@@ -87,6 +88,7 @@ const SETTING_RULES = {
     v && Number.isFinite(Number(v.x)) && Number.isFinite(Number(v.y))
       ? { x: Math.max(0, Math.min(100, Number(v.x))), y: Math.max(0, Math.min(100, Number(v.y))) }
       : null,
+  quiz: sanitizeQuiz,
   adminEmail: (v) => normEmail(v) || '',
   email: (v) => {
     const old = getSettings().email || DEFAULTS.email;
@@ -234,7 +236,13 @@ export function adminRouter(app) {
       emailDev: process.env.MAIL_DEV === '1',
       publicUrl: publicUrl(),
       accents: ACCENTS,
+      quiz: quizStats(),
     });
+  });
+
+  r.post('/quiz/reset', (req, res) => {
+    resetQuizResults();
+    res.json({ quiz: quizStats() });
   });
 
   r.patch('/settings', (req, res) => {
@@ -245,6 +253,7 @@ export function adminRouter(app) {
     if ('revealAt' in patch && (!patch.revealAt || Date.parse(patch.revealAt) > Date.now())) {
       patch.revealAnnounced = false;
     }
+    if ('quiz' in patch) onQuizSaved(getSettings().quiz, patch.quiz);
     setSettings(patch);
     hub.broadcast('settings', publicSettings());
     worker.kick();

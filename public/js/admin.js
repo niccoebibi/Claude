@@ -26,7 +26,7 @@ let ctx; // helpers from app.js (state, router, shared views)
 
 export async function renderAdmin(main, args, context) {
   ctx = context;
-  const pages = { '': adminHome, ospiti: adminGuests, contenuti: adminContent, email: adminEmail, condividi: adminShare };
+  const pages = { '': adminHome, ospiti: adminGuests, contenuti: adminContent, gioco: adminQuiz, email: adminEmail, condividi: adminShare };
   await (pages[args[0] || ''] || adminHome)(main, args.slice(1));
 }
 
@@ -157,6 +157,7 @@ async function adminHome(main) {
       <section class="card menu">
         <a href="#admin/ospiti">${icon('users')}<span>Tavoli e invitati</span>${icon('right')}</a>
         <a href="#admin/contenuti">${icon('edit')}<span>Contenuti e aspetto</span>${icon('right')}</a>
+        <a href="#admin/gioco">${icon('trophy')}<span>Il gioco degli sposi</span>${icon('right')}</a>
         <a href="#admin/email">${icon('mail')}<span>Email</span>${icon('right')}</a>
         <a href="#admin/condividi">${icon('qr')}<span>Condividi link e QR code</span>${icon('right')}</a>
         <a href="#schermo">${icon('tv')}<span>Schermo per proiettore</span>${icon('right')}</a>
@@ -1251,6 +1252,155 @@ async function adminContent(main) {
       await ctx.refreshState();
       ctx.renderShell();
       toast('Modifiche salvate ✨');
+      ctx.navigate('admin');
+    } catch (err) {
+      errorToast(err);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+/* ================================================================== */
+/* The couple's quiz                                                   */
+/* ================================================================== */
+
+const QUIZ_OPTIONS = 4;
+
+function questionEditor(item, i, n) {
+  const options = [...item.options];
+  while (options.length < QUIZ_OPTIONS) options.push('');
+  return `
+    <div class="section-editor card q-editor" data-i="${i}">
+      <div class="se-head">
+        <input class="q-emoji" data-f="emoji" value="${esc(item.emoji)}" maxlength="8" placeholder="🎲" aria-label="Emoji della domanda" />
+        <span class="q-num">Domanda ${i + 1}</span>
+        <div class="se-tools">
+          <button type="button" class="icon-btn" data-move="-1" ${i === 0 ? 'disabled' : ''} aria-label="Su">${icon('up')}</button>
+          <button type="button" class="icon-btn" data-move="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Giù">${icon('down')}</button>
+          <button type="button" class="icon-btn" data-remove aria-label="Elimina">${icon('trash')}</button>
+        </div>
+      </div>
+      <label class="field"><span>Domanda</span><textarea data-f="text" rows="2" maxlength="300">${esc(item.text)}</textarea></label>
+      <div class="field"><span>Risposte · segna quella giusta</span>
+        ${options
+          .map(
+            (o, k) => `<label class="q-opt">
+              <input type="radio" name="ans-${i}" value="${k}" ${item.answer === k ? 'checked' : ''} aria-label="Risposta giusta" />
+              <input data-opt value="${esc(o)}" maxlength="120" placeholder="Risposta ${'ABCD'[k]}${k > 1 ? ' (facoltativa)' : ''}" />
+            </label>`,
+          )
+          .join('')}
+      </div>
+      <label class="field"><span>Curiosità mostrata dopo la risposta</span><input data-f="fact" value="${esc(item.fact)}" maxlength="400" placeholder="Es. Proprio così, non ha dubbi! 😄" /></label>
+    </div>`;
+}
+
+async function adminQuiz(main) {
+  const O = await overview();
+  const st = O.quiz;
+  const quiz = O.settings.quiz || { enabled: true, title: 'Quanto conosci gli sposi?', intro: '', questions: [] };
+  let questions = structuredClone(quiz.questions);
+
+  main.innerHTML = `
+    <div class="container admin">
+      ${back}
+      <h2 class="page-title">Il gioco degli sposi</h2>
+      <p class="muted">Un quiz su di voi nel profilo di ogni invitato. Chi lo finisce riceve un trofeo accanto al nome; chi indovina tutte le risposte, il trofeo brillante ✨</p>
+      <section class="stats">
+        <div class="stat"><b>${st.finished}</b><span>hanno giocato</span></div>
+        <div class="stat"><b>${st.shiny}</b><span>trofei brillanti</span></div>
+        <div class="stat"><b>${st.playing}</b><span>stanno giocando</span></div>
+      </section>
+      <form id="quiz-form" class="form">
+        <section class="card">
+          <label class="switch-row"><input type="checkbox" name="enabled" ${quiz.enabled ? 'checked' : ''}/> <span>Gioco visibile agli invitati</span></label>
+          <label class="field"><span>Titolo</span><input name="title" maxlength="120" value="${esc(quiz.title)}" /></label>
+          <label class="field"><span>Presentazione</span><textarea name="intro" rows="3" maxlength="600">${esc(quiz.intro)}</textarea></label>
+        </section>
+        <h3 class="section-label">Domande</h3>
+        <p class="small muted">Da due a quattro risposte per domanda: tocca il pallino accanto a quella giusta.</p>
+        <div id="questions"></div>
+        <button type="button" class="btn ghost block" id="add-q">${icon('plus')} Aggiungi domanda</button>
+        <div class="save-bar"><button class="btn primary block big">${icon('check')} Salva il gioco</button></div>
+      </form>
+      ${
+        st.finished || st.playing
+          ? `<section class="card"><p class="small muted">Per ricominciare da zero, ad esempio dopo le vostre prove:</p>
+             <button type="button" class="btn ghost block" id="quiz-reset">${icon('refresh')} Azzera risultati e trofei</button></section>`
+          : ''
+      }
+    </div>`;
+
+  const box = $('#questions', main);
+  const read = () =>
+    $$('.q-editor', box).map((el) => ({
+      emoji: $('[data-f=emoji]', el).value.trim(),
+      text: $('[data-f=text]', el).value.trim(),
+      options: $$('[data-opt]', el).map((inp) => inp.value.trim()),
+      answer: Number($('input[type=radio]:checked', el)?.value ?? -1),
+      fact: $('[data-f=fact]', el).value.trim(),
+    }));
+  const draw = () => {
+    box.innerHTML = questions.length
+      ? questions.map((item, i) => questionEditor(item, i, questions.length)).join('')
+      : '<p class="muted center">Nessuna domanda: aggiungine una.</p>';
+  };
+  draw();
+
+  $('#add-q', main).addEventListener('click', () => {
+    questions = read();
+    questions.push({ emoji: '', text: '', options: [], answer: 0, fact: '' });
+    draw();
+    $$('[data-f=text]', box).pop().focus();
+  });
+  box.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const i = Number(btn.closest('[data-i]').dataset.i);
+    questions = read();
+    if (btn.dataset.move) {
+      const j = i + Number(btn.dataset.move);
+      [questions[i], questions[j]] = [questions[j], questions[i]];
+    } else if (btn.matches('[data-remove]')) {
+      if (!(await confirmDialog('Eliminare questa domanda?', { ok: 'Elimina', danger: true }))) return;
+      questions.splice(i, 1);
+    }
+    draw();
+  });
+
+  $('#quiz-reset', main)?.addEventListener('click', async () => {
+    const ok = await confirmDialog('Azzerare i risultati di tutti? Gli invitati perderanno il trofeo e potranno rigiocare.', {
+      ok: 'Azzera',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api('/api/admin/quiz/reset', { method: 'POST' });
+      toast('Risultati azzerati');
+      ctx.route();
+    } catch (err) {
+      errorToast(err);
+    }
+  });
+
+  $('#quiz-form', main).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const list = read().filter((item) => item.text || item.options.some(Boolean));
+    const bad = list.findIndex((item) => !item.text || item.options.filter(Boolean).length < 2 || !item.options[item.answer]);
+    if (bad >= 0) {
+      return toast(`Domanda ${bad + 1}: scrivi la domanda, almeno due risposte e segna quella giusta`);
+    }
+    const btn = f.querySelector('.save-bar button');
+    btn.disabled = true;
+    try {
+      await api('/api/admin/settings', {
+        method: 'PATCH',
+        body: { quiz: { enabled: f.elements.enabled.checked, title: f.elements.title.value, intro: f.elements.intro.value, questions: list } },
+      });
+      await ctx.refreshState();
+      toast('Gioco salvato 🏆');
       ctx.navigate('admin');
     } catch (err) {
       errorToast(err);

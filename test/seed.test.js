@@ -29,6 +29,8 @@ before(async () => {
   const real = JSON.parse(fs.readFileSync('config/matrimonio.json', 'utf8'));
   real.images = { 'copertina.jpg': `${img}/cover.jpg`, 'palazzo-brancaccio.jpg': `${img}/nope.jpg` };
   fs.writeFileSync(path.join(DATA, 'seed.json'), JSON.stringify(real));
+  const quiz = { title: 'Quanto ci conosci?', questions: [{ emoji: '🎂', text: 'Torta?', options: ['Sì', 'No'], answer: 0 }] };
+  fs.writeFileSync(path.join(DATA, 'quiz.json'), JSON.stringify(quiz));
 });
 
 after(() => {
@@ -39,7 +41,7 @@ after(() => {
 
 async function start() {
   server = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'server/index.js'], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR: DATA, ADMIN_PASSWORD: 'x', SEED_FILE: path.join(DATA, 'seed.json') },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR: DATA, ADMIN_PASSWORD: 'x', SEED_FILE: path.join(DATA, 'seed.json'), QUIZ_FILE: path.join(DATA, 'quiz.json') },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   for (let i = 0; i < 80; i++) {
@@ -80,6 +82,7 @@ test('a fresh installation starts with the couple\'s content, tables and picture
   assert.equal(s.sections[1].image, '', 'a picture that could not be downloaded is dropped');
   assert.equal((await fetch(`${BASE}/uploads/copertina.jpg`)).status, 200);
   assert.equal(s.email, undefined);
+  assert.deepEqual(s.quiz, { title: 'Quanto ci conosci?', intro: '', count: 1 }, 'quiz loaded from its own file');
 
   const cookie = await adminCookie();
   const tables = (await (await fetch(`${BASE}/api/admin/tables`, { headers: { cookie } })).json()).tables;
@@ -93,12 +96,13 @@ test('a restart never overwrites what the couple changed', async () => {
   await fetch(`${BASE}/api/admin/settings`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json', cookie },
-    body: JSON.stringify({ welcomeTitle: 'Benvenuti!' }),
+    body: JSON.stringify({ welcomeTitle: 'Benvenuti!', quiz: null }),
   });
   await stop();
   await start();
   const s = (await (await fetch(`${BASE}/api/state`)).json()).settings;
   assert.equal(s.welcomeTitle, 'Benvenuti!');
+  assert.equal(s.quiz, null, 'a quiz the couple removed stays removed');
   const tables = (await (await fetch(`${BASE}/api/admin/tables`, { headers: { cookie: await adminCookie() } })).json()).tables;
   assert.equal(tables.length, 19, 'tables not created twice');
 });

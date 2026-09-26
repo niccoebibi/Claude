@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const KEY = 'wedding-demo-v8';
+  const KEY = 'wedding-demo-v9';
   const DEMO_URL = 'https://www.17aprile2027.it';
   const ACCENTS = {
     salvia: { name: 'Salvia', color: '#6F826A' },
@@ -87,6 +87,16 @@
     return list;
   }
 
+  // Some guests have already played the couple's quiz in the preview.
+  const QUIZ_TOTAL = INITIAL.settings.quiz?.questions?.length || 0;
+  function sampleQuiz(i) {
+    const played = QUIZ_TOTAL && i > 1 && (i % 7 === 1 || [7, 19, 44].includes(i));
+    if (!played) return { quizAnswers: null, quizScore: null, quizDoneAt: null, trophy: null };
+    const shiny = [7, 19, 44].includes(i);
+    const score = shiny ? QUIZ_TOTAL : Math.max(3, QUIZ_TOTAL - 1 - (i % 7));
+    return { quizAnswers: [], quizScore: score, quizDoneAt: Date.now() - (200 - i) * 600000, trophy: shiny ? 'shiny' : 'classic' };
+  }
+
   function seed() {
     const t = Date.now();
     // 19 tables like the real hall: the couple's table for two at the top centre, 18 round tables in rows.
@@ -125,6 +135,7 @@
       pushDevices: i % 3 === 0 ? 0 : 1,
       notifiedAt: null,
       emailStatus: null,
+      ...sampleQuiz(i),
     }));
     const photos = [
       paintPhoto('💐', '#e9c9c0', '#9fb09a', 3),
@@ -159,7 +170,7 @@
       msg(6, 16, 'Teresa Ferri', 'text', 'Auguri ragazzi, una giornata perfetta 🌸', null, 95, 6),
     ];
     return {
-      v: 8,
+      v: 9,
       meId: null,
       admin: false,
       pushEnabled: false,
@@ -198,7 +209,7 @@
   } catch {
     store = null;
   }
-  if (!store || store.v !== 8) store = seed();
+  if (!store || store.v !== 9) store = seed();
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(store));
@@ -219,21 +230,62 @@
   const liker = () => (store.meId ? `g${store.meId}` : 'admin');
   const table = (id) => store.tables.find((t) => t.id === id);
 
+  const quizOf = () => (S().quiz?.enabled && S().quiz.questions?.length ? S().quiz : null);
   function publicSettings() {
-    const { email, adminEmail, revealAnnounced, ...rest } = S(); // eslint-disable-line no-unused-vars
-    return structuredClone(rest);
+    const { email, adminEmail, revealAnnounced, quiz, ...rest } = S(); // eslint-disable-line no-unused-vars
+    const qz = quizOf();
+    return { ...structuredClone(rest), quiz: qz ? { title: qz.title, intro: qz.intro, count: qz.questions.length } : null };
   }
   function adminSettings() {
     const s = structuredClone(S());
     s.email = { ...s.email, pass: '', hasPass: !!S().email.pass };
     return s;
   }
+  function quizMe(g) {
+    const total = quizOf()?.questions.length || 0;
+    const answered = g.quizDoneAt ? total : (g.quizAnswers || []).filter((a) => a !== null && a !== undefined).length;
+    return { answered, score: g.quizScore ?? 0, done: !!g.quizDoneAt };
+  }
   function meJson(g) {
-    return { id: g.id, name: g.name, email: g.email, loginKey: 'demo', hasTable: !!g.tableId, pushDevices: store.pushEnabled ? 1 : 0 };
+    return {
+      id: g.id,
+      name: g.name,
+      email: g.email,
+      loginKey: 'demo',
+      hasTable: !!g.tableId,
+      pushDevices: store.pushEnabled ? 1 : 0,
+      trophy: g.trophy || null,
+      quiz: quizMe(g),
+    };
   }
   function msgJson(m) {
     const { likedBy, deleted, ...rest } = m; // eslint-disable-line no-unused-vars
-    return { ...rest, liked: likedBy.includes(liker()) };
+    const author = !m.isAdmin && store.guests.find((g) => g.id === m.guestId);
+    return { ...rest, liked: likedBy.includes(liker()), trophy: author?.trophy || null };
+  }
+  function sanitizeQuiz(v) {
+    if (!v) return null;
+    const questions = (v.questions || [])
+      .map((item) => {
+        const kept = (item.options || []).map((o, i) => ({ text: String(o || '').trim(), i })).filter((o) => o.text);
+        return {
+          emoji: String(item.emoji || ''),
+          text: String(item.text || '').trim(),
+          options: kept.map((o) => o.text),
+          answer: Math.max(0, kept.findIndex((o) => o.i === Number(item.answer))),
+          fact: String(item.fact || '').trim(),
+        };
+      })
+      .filter((item) => item.text && item.options.length >= 2);
+    return { enabled: v.enabled !== false, title: String(v.title || '').trim() || 'Quanto conosci gli sposi?', intro: String(v.intro || ''), questions };
+  }
+  function quizStats() {
+    const gs = store.guests;
+    return {
+      playing: gs.filter((g) => g.quizAnswers?.length && !g.quizDoneAt).length,
+      finished: gs.filter((g) => g.quizDoneAt).length,
+      shiny: gs.filter((g) => g.trophy === 'shiny').length,
+    };
   }
 
   /* ---------------------------------------------------------------- */
@@ -679,6 +731,51 @@
       save();
       return { ok: true };
     }],
+    ['GET', /^\/api\/quiz$/, () => {
+      const qz = quizOf();
+      if (!qz) return fail(404, 'Il gioco non è disponibile');
+      const g = me();
+      if (!g) return fail(401, 'Registrati per giocare');
+      const answers = g.quizAnswers || [];
+      return {
+        title: qz.title,
+        intro: qz.intro,
+        questions: qz.questions.map((item, i) => ({
+          emoji: item.emoji,
+          text: item.text,
+          options: item.options,
+          ...(Number.isInteger(answers[i]) ? { chosen: answers[i], answer: item.answer, fact: item.fact } : {}),
+        })),
+        score: g.quizScore ?? 0,
+        done: !!g.quizDoneAt,
+        trophy: g.trophy || null,
+        champions: store.guests.filter((x) => x.trophy === 'shiny').sort((a, b) => a.quizDoneAt - b.quizDoneAt).map((x) => x.name),
+        players: store.guests.filter((x) => x.quizDoneAt).length,
+      };
+    }],
+    ['POST', /^\/api\/quiz\/answer$/, (b) => {
+      const qz = quizOf();
+      if (!qz) return fail(404, 'Il gioco non è disponibile');
+      const g = me();
+      if (!g) return fail(401, 'Registrati per giocare');
+      if (g.quizDoneAt) return fail(409, 'Hai già finito il gioco');
+      const item = qz.questions[b.index];
+      if (!item || !(b.choice >= 0 && b.choice < item.options.length)) return fail(400, 'Risposta non valida');
+      const answers = qz.questions.map((_, i) => (Number.isInteger(g.quizAnswers?.[i]) ? g.quizAnswers[i] : null));
+      if (answers[b.index] !== null) return fail(409, 'Hai già risposto a questa domanda');
+      answers[b.index] = b.choice;
+      const score = answers.filter((a, i) => a === qz.questions[i].answer).length;
+      const done = answers.every((a) => a !== null);
+      Object.assign(g, {
+        quizAnswers: answers,
+        quizScore: score,
+        quizDoneAt: done ? Date.now() : null,
+        trophy: done ? (score === qz.questions.length ? 'shiny' : 'classic') : null,
+      });
+      save();
+      return { correct: b.choice === item.answer, answer: item.answer, fact: item.fact, score, done, trophy: g.trophy, me: meJson(g) };
+    }],
+
     ['*', /^\/api\/admin\//, () => (store.admin ? null : fail(401, 'Accesso riservato agli sposi'))],
 
     ['GET', /^\/api\/admin\/overview$/, () => ({
@@ -690,7 +787,13 @@
       emailDev: false,
       publicUrl: DEMO_URL,
       accents: ACCENTS,
+      quiz: quizStats(),
     })],
+    ['POST', /^\/api\/admin\/quiz\/reset$/, () => {
+      store.guests.forEach((g) => Object.assign(g, { quizAnswers: null, quizScore: null, quizDoneAt: null, trophy: null }));
+      save();
+      return { quiz: quizStats() };
+    }],
 
     ['PATCH', /^\/api\/admin\/settings$/, (b) => {
       const s = S();
@@ -698,6 +801,12 @@
       for (const k of keys) if (k in b) s[k] = b[k];
       if (!s.coupleNames) s.coupleNames = 'Niccolò & Beatrice';
       if (b.email) s.email = { ...s.email, ...b.email, pass: b.email.pass || s.email.pass };
+      if ('quiz' in b) {
+        const quiz = sanitizeQuiz(b.quiz);
+        const sig = (x) => JSON.stringify((x?.questions || []).map((item) => [item.text, item.options, item.answer]));
+        if (sig(quiz) !== sig(s.quiz)) store.guests.forEach((g) => !g.quizDoneAt && (g.quizAnswers = null));
+        s.quiz = quiz;
+      }
       if ('revealAt' in b && (!b.revealAt || Date.parse(b.revealAt) > Date.now())) {
         s.revealAnnounced = false;
         store.guests.forEach(resetNotice);
@@ -1083,6 +1192,7 @@
         <li>Registrati come farà un invitato (nome ed email qualsiasi)</li>
         <li>Tocca <b>«Sposi (Regia)»</b> in alto: è il pannello di Niccolò e Beatrice</li>
         <li>Prova <b>«Svela adesso»</b> per scoprire il tavolo e la piantina, poi apri la <b>Chat LIVE</b></li>
+        ${quizOf() ? '<li>Nel <b>Profilo</b> c’è il gioco degli sposi: indovina tutto e vinci il trofeo brillante 🏆</li>' : ''}
       </ol>
       <div class="sheet-actions"><button class="btn primary block" data-x>Inizia</button></div></div>`;
     document.body.appendChild(wrap);

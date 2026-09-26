@@ -4,3 +4,4 @@ data/
 .DS_Store
 demo/dist/
 demo/assets/
+config/quiz.json

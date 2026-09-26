@@ -15,7 +15,7 @@ let server;
 
 before(async () => {
   server = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'server/index.js'], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR: DATA, ADMIN_PASSWORD: 'segreta', MAIL_DEV: '1', SEED_FILE: '/nonexistent' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR: DATA, ADMIN_PASSWORD: 'segreta', MAIL_DEV: '1', SEED_FILE: '/nonexistent', QUIZ_FILE: '/nonexistent' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   server.stderr.on('data', (d) => process.stderr.write(d));
@@ -367,4 +367,52 @@ test('style options and card images', async () => {
   assert.equal(bogus.data.settings.nameFont, 'serif');
   assert.equal(bogus.data.settings.coverTone, 'dark');
   assert.equal((await fetch(`${BASE}/uploads/${up.data.file}`)).status, 200);
+});
+
+test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one', async () => {
+  assert.equal((await mario.get('/api/quiz')).status, 404, 'no quiz yet');
+  assert.equal((await mario.get('/api/state')).data.settings.quiz, null);
+  const quiz = {
+    title: 'Quanto conosci gli sposi?',
+    questions: [
+      { emoji: '🎂', text: 'Domanda uno', options: ['A', '', 'B', 'C'], answer: 2, fact: 'Era B' },
+      { text: 'Domanda due', options: ['Sì', 'No'], answer: 0 },
+      { text: 'Una sola opzione', options: ['solo questa'] },
+    ],
+  };
+  const saved = (await admin.patch('/api/admin/settings', { quiz })).data.settings.quiz;
+  assert.equal(saved.questions.length, 2, 'a question needs at least two options');
+  assert.deepEqual(saved.questions[0].options, ['A', 'B', 'C']);
+  assert.equal(saved.questions[0].answer, 1, 'the right answer follows its option');
+
+  const pub = (await client().get('/api/state')).data.settings.quiz;
+  assert.deepEqual(pub, { title: 'Quanto conosci gli sposi?', intro: '', count: 2 }, 'no questions in the public state');
+  assert.equal((await client().get('/api/quiz')).status, 401);
+
+  const game = (await mario.get('/api/quiz')).data;
+  assert.equal(game.questions[0].answer, undefined, 'answers stay on the server');
+  const wrong = await mario.post('/api/quiz/answer', { index: 0, choice: 0 });
+  assert.deepEqual([wrong.data.correct, wrong.data.answer, wrong.data.fact], [false, 1, 'Era B']);
+  assert.equal((await mario.post('/api/quiz/answer', { index: 0, choice: 1 })).status, 409, 'no second chances');
+  assert.equal((await mario.post('/api/quiz/answer', { index: 1, choice: 5 })).status, 400);
+  const last = await mario.post('/api/quiz/answer', { index: 1, choice: 0 });
+  assert.equal(last.data.trophy, 'classic', 'a trophy for everyone who finishes');
+  assert.deepEqual(last.data.me.quiz, { answered: 2, score: 1, done: true });
+  assert.equal((await mario.get('/api/quiz')).data.questions[0].chosen, 0, 'answers can be reviewed');
+
+  await anna.post('/api/quiz/answer', { index: 0, choice: 1 });
+  const annaDone = await anna.post('/api/quiz/answer', { index: 1, choice: 0 });
+  assert.equal(annaDone.data.trophy, 'shiny');
+  assert.deepEqual((await mario.get('/api/quiz')).data.champions, ['Anna Bianchi']);
+  assert.equal((await anna.get('/api/state')).data.me.trophy, 'shiny');
+
+  // The trophy shows next to the name in the Chat LIVE.
+  const msg = (await anna.post('/api/messages', { text: 'Ho vinto!' })).data.message;
+  assert.equal(msg.trophy, 'shiny');
+  const list = (await mario.get('/api/messages')).data.messages;
+  assert.equal(list.find((m) => m.id === msg.id).trophy, 'shiny');
+
+  assert.deepEqual((await admin.get('/api/admin/overview')).data.quiz, { playing: 0, finished: 2, shiny: 1 });
+  await admin.post('/api/admin/quiz/reset');
+  assert.equal((await anna.get('/api/state')).data.me.trophy, null);
 });

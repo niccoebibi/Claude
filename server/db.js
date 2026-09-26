@@ -91,6 +91,10 @@ CREATE TABLE IF NOT EXISTS likes (
 const tableColumns = db.prepare('PRAGMA table_info(seating_tables)').all().map((c) => c.name);
 if (!tableColumns.includes('shape')) db.exec("ALTER TABLE seating_tables ADD COLUMN shape TEXT NOT NULL DEFAULT 'round'");
 if (!tableColumns.includes('seats')) db.exec('ALTER TABLE seating_tables ADD COLUMN seats INTEGER NOT NULL DEFAULT 0');
+const guestColumns = db.prepare('PRAGMA table_info(guests)').all().map((c) => c.name);
+for (const [col, type] of [['quiz_answers', 'TEXT'], ['quiz_score', 'INTEGER'], ['quiz_done_at', 'INTEGER'], ['trophy', 'TEXT']]) {
+  if (!guestColumns.includes(col)) db.exec(`ALTER TABLE guests ADD COLUMN ${col} ${type}`);
+}
 
 // One registration per email address (a household can share an email only on the imported list).
 try {
@@ -192,6 +196,8 @@ export const DEFAULTS = {
   floorplan: null,
   // Where the entrance is on the floor plan (percent of width/height): guests see the way to their table.
   hallEntrance: { x: 10, y: 97 },
+  // The couple's quiz ({ enabled, title, intro, questions: [{ emoji, text, options, answer, fact }] }).
+  quiz: null,
   iconVersion: 0,
   customIcon: false,
   adminEmail: '',
@@ -211,7 +217,7 @@ export const DEFAULTS = {
   seededAt: null,
 };
 
-const PRIVATE_KEYS = new Set(['email', 'vapid', 'secret', 'adminEmail', 'revealAnnounced', 'publicUrl', 'seededAt']);
+const PRIVATE_KEYS = new Set(['email', 'vapid', 'secret', 'adminEmail', 'revealAnnounced', 'publicUrl', 'seededAt', 'quiz']);
 
 const upsertSetting = db.prepare(
   'INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
@@ -248,7 +254,14 @@ export function publicSettings() {
   const s = getSettings();
   const out = {};
   for (const key of Object.keys(s)) if (!PRIVATE_KEYS.has(key)) out[key] = s[key];
+  out.quiz = quizSummary(s.quiz);
   return out;
+}
+
+/** What every client may see of the quiz: no questions, no answers. */
+export function quizSummary(quiz) {
+  if (!quiz?.enabled || !quiz.questions?.length) return null;
+  return { title: quiz.title, intro: quiz.intro, count: quiz.questions.length };
 }
 
 if (!getSettings().secret) setSettings({ secret: crypto.randomBytes(32).toString('hex') });

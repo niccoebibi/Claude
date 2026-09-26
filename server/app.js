@@ -26,6 +26,7 @@ import * as mail from './mail.js';
 import * as worker from './worker.js';
 import { adminRouter } from './admin.js';
 import { ACCENTS } from './theme.js';
+import { quizMe, registerQuizRoutes } from './quiz.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -148,6 +149,8 @@ export function meJson(g) {
     loginKey: g.token,
     hasTable: !!g.table_id,
     pushDevices: q.pushCount.get(g.id).n,
+    trophy: g.trophy || null,
+    quiz: quizMe(g),
   };
 }
 
@@ -165,6 +168,7 @@ export function msgJson(m) {
     h: m.h,
     likes: m.likes,
     liked: !!m.liked,
+    trophy: m.is_admin ? null : m.trophy || null,
     createdAt: m.created_at,
   };
 }
@@ -478,6 +482,10 @@ export function createApp() {
     res.json({ ok: true, delivered: n });
   });
 
+  /* ---------- The couple's quiz ---------- */
+
+  registerQuizRoutes(app, { meJson });
+
   /* ---------- Seating ---------- */
 
   app.get('/api/seating', requireUser, (req, res) => {
@@ -500,8 +508,9 @@ export function createApp() {
 
   /* ---------- Board: messages & photos ---------- */
 
-  const msgSelect = `SELECT m.*, (l.liker IS NOT NULL) AS liked FROM messages m
-    LEFT JOIN likes l ON l.message_id = m.id AND l.liker = ?`;
+  const msgSelect = `SELECT m.*, (l.liker IS NOT NULL) AS liked, g.trophy AS trophy FROM messages m
+    LEFT JOIN likes l ON l.message_id = m.id AND l.liker = ?
+    LEFT JOIN guests g ON g.id = m.guest_id`;
 
   app.get('/api/messages', requireUser, (req, res) => {
     if (!boardOpen(req)) return res.status(403).json({ error: 'La chat LIVE non è ancora aperta' });
@@ -542,7 +551,11 @@ export function createApp() {
         fields.h || null,
         Date.now(),
       );
-    const msg = msgJson(db.prepare('SELECT *, 0 AS liked FROM messages WHERE id = ?').get(Number(r.lastInsertRowid)));
+    const msg = msgJson(
+      db
+        .prepare('SELECT m.*, 0 AS liked, g.trophy AS trophy FROM messages m LEFT JOIN guests g ON g.id = m.guest_id WHERE m.id = ?')
+        .get(Number(r.lastInsertRowid)),
+    );
     hub.broadcastBoard('msg', msg);
     return msg;
   }

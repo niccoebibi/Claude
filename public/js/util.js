@@ -122,6 +122,7 @@ const ICONS = {
   calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   grid: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
   qr: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="14.01"/><line x1="18" y1="14" x2="21" y2="14"/><line x1="14" y1="18" x2="14" y2="21"/><line x1="18" y1="18" x2="21" y2="21"/>',
+  trophy: '<path d="M7 3h10v6a5 5 0 0 1-10 0z"/><path d="M17 5h3a3 3 0 0 1-3 5M7 5H4a3 3 0 0 0 3 5"/><path d="M12 14v4M8 21h8M9 18h6"/>',
 };
 
 // Fine-line illustrations for the info cards (48x48), in the style of the couple's stationery.
@@ -422,3 +423,111 @@ export const device = {
   iosChrome: /CriOS/i.test(ua),
   standalone: () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true,
 };
+
+/* ------------------------------------------------------------------ */
+/* Trophies & confetti (the couple's quiz)                             */
+/* ------------------------------------------------------------------ */
+
+let trophyIds = 0;
+/**
+ * Trophy for the quiz: 'classic' (silver, everyone who finishes) or 'shiny'
+ * (gold with sparkles, all answers right). `mini` drops the animations for badges.
+ */
+export function trophySVG(kind, { mini = false } = {}) {
+  const shiny = kind === 'shiny';
+  const id = `tr${++trophyIds}`;
+  const [c1, c2, c3, line] = shiny ? ['#fff4c2', '#f1c343', '#c98d17', '#9c6a0c'] : ['#ffffff', '#dfe4ef', '#a9b3c9', 'var(--accent)'];
+  const cup = 'M19 7h26v10c0 9-5.8 16-13 16S19 26 19 17z';
+  const sparkle = (x, y, r, d) =>
+    `<path class="tw" style="animation-delay:${d}s" d="M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}z"/>`;
+  return `<svg class="trophy ${shiny ? 'shiny' : 'classic'}" viewBox="0 0 64 64" aria-hidden="true">
+    <defs>
+      <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset=".5" stop-color="${c2}"/><stop offset="1" stop-color="${c3}"/></linearGradient>
+      ${mini ? '' : `<clipPath id="${id}c"><path d="${cup}"/><rect x="21" y="43" width="22" height="6" rx="2"/><rect x="17" y="49" width="30" height="8" rx="2.5"/></clipPath>`}
+    </defs>
+    <g stroke="${line}" stroke-width="${mini ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M19 11h-7c0 8 3.5 12.5 9.5 13.5M45 11h7c0 8-3.5 12.5-9.5 13.5" fill="none"/>
+      <path d="${cup}" fill="url(#${id}g)"/>
+      <path d="M28.5 33h7l-1 10h-5z" fill="url(#${id}g)"/>
+      <rect x="21" y="43" width="22" height="6" rx="2" fill="url(#${id}g)"/>
+      <rect x="17" y="49" width="30" height="8" rx="2.5" fill="url(#${id}g)"/>
+    </g>
+    <path d="M32 13.5l2.1 4.3 4.7.7-3.4 3.3.8 4.7-4.2-2.2-4.2 2.2.8-4.7-3.4-3.3 4.7-.7z" fill="${shiny ? '#fffbe6' : 'var(--accent)'}" opacity="${shiny ? 0.95 : 0.85}"/>
+    ${
+      mini
+        ? ''
+        : `<g clip-path="url(#${id}c)"><rect class="shine" x="-18" y="0" width="12" height="64" fill="#fff" opacity=".55"/></g>
+           ${shiny ? `<g class="sparkles" fill="#f5c542">${sparkle(10, 6, 4, 0)}${sparkle(56, 30, 3.5, 0.7)}${sparkle(8, 36, 3, 1.3)}${sparkle(54, 4, 2.5, 1.9)}</g>` : ''}`
+    }
+  </svg>`;
+}
+
+/**
+ * Canvas confetti. A burst from (x, y) or, with `rain`, a shower from the top.
+ * Skipped for people who asked their phone for less motion.
+ */
+export function confetti({ x, y, count = 70, spread = 60, power = 1, rain = false, duration = 2600 } = {}) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti-canvas';
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  document.body.appendChild(canvas);
+  const g = canvas.getContext('2d');
+  g.scale(dpr, dpr);
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3d518a';
+  const colors = [accent, '#e3b341', '#f3d57a', '#eea5b8', '#8fa6de', '#c9d4f2'];
+  const ox = x ?? W / 2;
+  const oy = y ?? H / 3;
+  const parts = Array.from({ length: count }, (_, i) => {
+    const angle = ((-90 + (Math.random() - 0.5) * 2 * spread) * Math.PI) / 180;
+    const v = (5 + Math.random() * 7) * power;
+    return {
+      x: rain ? Math.random() * W : ox,
+      y: rain ? -20 - Math.random() * H * 0.6 : oy,
+      vx: rain ? (Math.random() - 0.5) * 1.5 : Math.cos(angle) * v,
+      vy: rain ? 2 + Math.random() * 2.5 : Math.sin(angle) * v,
+      w: 5 + Math.random() * 5,
+      h: 7 + Math.random() * 7,
+      rot: Math.random() * Math.PI,
+      vr: (Math.random() - 0.5) * 0.35,
+      sway: Math.random() * Math.PI * 2,
+      color: colors[i % colors.length],
+      round: Math.random() < 0.25,
+    };
+  });
+  const start = performance.now();
+  const frame = (now) => {
+    const age = now - start;
+    g.clearRect(0, 0, W, H);
+    g.globalAlpha = Math.max(0, Math.min(1, (duration - age) / 600));
+    for (const p of parts) {
+      p.vy += rain ? 0.03 : 0.22;
+      p.vx *= 0.985;
+      p.vy *= 0.985;
+      p.sway += 0.08;
+      p.x += p.vx + (rain ? Math.sin(p.sway) * 0.8 : 0);
+      p.y += p.vy;
+      p.rot += p.vr;
+      g.save();
+      g.translate(p.x, p.y);
+      g.rotate(p.rot);
+      g.fillStyle = p.color;
+      if (p.round) {
+        g.beginPath();
+        g.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+        g.fill();
+      } else {
+        g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.max(0.2, Math.abs(Math.cos(p.rot * 1.7))));
+      }
+      g.restore();
+    }
+    if (age < duration) requestAnimationFrame(frame);
+    else canvas.remove();
+  };
+  requestAnimationFrame(frame);
+}
+

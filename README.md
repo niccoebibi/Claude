@@ -4,6 +4,7 @@ Un'unica app, che gli invitati aprono da un link o da un QR code (nessun App Sto
 
 - **Prima del matrimonio:** informazioni (cerimonia, ricevimento, programma, dress code, lista nozze, contatti) e conto alla rovescia.
 - **Svelamento dei tavoli:** all'ora che scegliete, ogni invitato riceve una **notifica sul telefono** e un'**email** con il suo tavolo, il posto, chi siede con lui e la piantina della sala con il suo tavolo evidenziato.
+- **Il gioco degli sposi:** nel profilo di ogni invitato un quiz su di voi, con emoji e coriandoli a ogni risposta giusta. Chi lo finisce riceve un **trofeo** accanto al nome (anche nella chat LIVE); chi indovina tutto, il **trofeo brillante** e un posto nell'albo d'oro.
 - **Il giorno del matrimonio:** con un tasto la trasformate nella **chat LIVE**: messaggi e foto in diretta, cuoricini, galleria, annunci degli sposi e uno **schermo per il proiettore**.
 - **Dopo:** scaricate tutte le foto e i messaggi in un file .zip.
 
@@ -25,6 +26,8 @@ L'app gira su **[Render](https://render.com)**. Costa circa **9,50 $ al mese**: 
 ### Passo 1 · Rendete privato questo repository (consigliato, 30 secondi)
 
 Il codice contiene luogo e orario del matrimonio. Su GitHub aprite **Settings › General**, scorrete fino a **Danger Zone**, poi **Change visibility › Make private**.
+
+Le domande del **gioco degli sposi** parlano di voi (lavoro, gusti, passioni), quindi finché il repository è pubblico non ci sono: stanno nel file `config/quiz.json`, escluso da GitHub. Quando il repository è privato, chiedete a Claude di aggiungerle; oppure scrivetele voi in **Regia › Il gioco degli sposi**.
 
 ### Passo 2 · Mettete online l'app su Render
 
@@ -112,6 +115,7 @@ npm test         # test end-to-end delle API
 | `DATA_DIR` | Cartella persistente per database e foto (default `./data`) |
 | `PUBLIC_URL` | Indirizzo pubblico, usato nelle email e nel QR (facoltativo: di solito lo riconosce da solo) |
 | `SEED_FILE` | Configurazione iniziale da caricare al primo avvio (default `config/matrimonio.json`) |
+| `QUIZ_FILE` | Domande del gioco degli sposi, caricate una volta sola (default `config/quiz.json`, escluso da git) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Facoltative: configurano le email senza passare dalla Regia |
 
 Con Docker: `docker build -t matrimonio . && docker run -p 3000:3000 -v matrimonio-dati:/data -e ADMIN_PASSWORD=… matrimonio`.

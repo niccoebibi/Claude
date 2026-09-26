@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import QRCode from 'qrcode';
+import { ACCENTS } from '../server/theme.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PUB = path.join(ROOT, 'public');
@@ -15,6 +16,10 @@ const DEMO_URL = 'https://www.17aprile2027.it';
 // demo/assets/ (git-ignored) on the first build.
 const INITIAL = JSON.parse(fs.readFileSync(path.join(ROOT, 'config', 'matrimonio.json'), 'utf8'));
 const IMAGES = INITIAL.images || {};
+// The couple's quiz lives in config/quiz.json, kept out of the public repository.
+const QUIZ_FILE = path.join(ROOT, 'config', 'quiz.json');
+if (fs.existsSync(QUIZ_FILE)) INITIAL.settings.quiz = JSON.parse(fs.readFileSync(QUIZ_FILE, 'utf8'));
+else console.warn('config/quiz.json non trovato: anteprima senza il gioco degli sposi');
 
 fs.rmSync(OUT, { recursive: true, force: true });
 for (const dir of ['css', 'js', 'icon', 'demo', 'img']) fs.mkdirSync(path.join(OUT, dir), { recursive: true });
@@ -75,7 +80,7 @@ fs.writeFileSync(
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=Italianno&display=swap" />
 <link rel="stylesheet" href="css/app.css" />
 <style>
-  :root { --accent: #6f826a; }
+  :root { --accent: ${ACCENTS[INITIAL.settings.accent]?.color || ACCENTS.salvia.color}; }
   /* The preview frame already pads the page by the safe areas. */
   .topbar { top: env(safe-area-inset-top, 0px); padding-top: 8px; }
   /* Toasts at the bottom so they never collide with the notification preview at the top. */
