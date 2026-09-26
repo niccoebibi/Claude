@@ -774,11 +774,11 @@ function quizHomeHTML() {
   if (!qz || !S.me) return '';
   const st = S.me.quiz || {};
   if (st.done) {
-    const won = st.place && st.place <= qz.prizes;
     return `<section class="card quiz-home done ${S.me.trophy}">
       <div class="qh-trophy">${trophySVG(S.me.trophy)}</div>
       <div class="qc-label">${S.me.trophy === 'shiny' ? 'Il tuo trofeo brillante' : 'Il tuo trofeo'}</div>
-      <p>Hai indovinato <b>${st.score} su ${qz.count}</b> nel gioco degli sposi${won ? '<br><b class="qh-won">🎁 Hai vinto un premio!</b>' : ''}</p>
+      <p>Hai indovinato <b>${st.score} su ${qz.count}</b> nel gioco degli sposi</p>
+      ${placeHTML(st.place, qz)}
       <a class="btn ghost block" href="#profilo/gioco">🏆 Rivedi il gioco</a>
     </section>`;
   }
@@ -1585,7 +1585,7 @@ function quizCardHTML() {
       <div class="qc-label">${trophyTitle(S.me.trophy)}</div>
       <h3 class="qc-title">${shiny ? 'Conosci gli sposi alla perfezione!' : 'Il trofeo è tuo!'}</h3>
       <p class="muted">Hai indovinato <b>${st.score} su ${qz.count}</b> nel gioco «${esc(qz.title)}».</p>
-      ${st.place && st.place <= qz.prizes ? `<p class="qh-won">${placeText(st.place)}</p>` : ''}
+      ${placeHTML(st.place, qz)}
       <a class="btn ghost small" href="#profilo/gioco">Rivedi le risposte</a>
     </section>`;
   }
@@ -1602,20 +1602,30 @@ function quizCardHTML() {
 const LETTERS = 'ABCDEF';
 const MEDALS = ['🥇', '🥈', '🥉'];
 const PLACES = ['Primo', 'Secondo', 'Terzo', 'Quarto', 'Quinto', 'Sesto', 'Settimo', 'Ottavo', 'Nono', 'Decimo'];
-const placeText = (place) => `${MEDALS[place - 1] || '🏅'} ${PLACES[place - 1] || `${place}°`} posto: hai vinto un premio! 🎁`;
 
-/** In big letters: the first few who get everything right win a prize. */
+/** Where the guest stands, and whether that is worth a prize (for now, or for good). */
+function placeHTML(place, qz, big = false) {
+  if (!place) return qz?.closed && qz.prizes ? '<p class="small muted">La classifica per i premi è già chiusa, ma il trofeo è tuo ✨</p>' : '';
+  const medal = MEDALS[place - 1] || '🏅';
+  if (place > (qz?.prizes || 0)) return `<p class="qh-place">${medal} Sei ${place}° in classifica</p>`;
+  const [title, note] = qz.closed
+    ? [`${medal} ${PLACES[place - 1]} posto: hai vinto un premio! 🎁`, 'Gli sposi ti aspettano per consegnartelo']
+    : [`${medal} Sei ${place}° in classifica!`, 'Se nessuno ti supera entro il lancio del bouquet, il premio è tuo 🎁'];
+  return big
+    ? `<div class="quiz-prize won"><b>${title}</b><small>${note}</small></div>`
+    : `<p class="qh-won">${title}<br><span>${note}</span></p>`;
+}
+
+/** In big letters: the podium wins a prize, as it stands at the bouquet toss. */
 function prizeHTML(qz) {
   const n = qz?.prizes || 0;
   if (!n) return '';
-  const left = qz.prizesLeft ?? n;
-  const text = !left
-    ? `${n === 1 ? 'Il premio è già stato vinto' : `I ${n} premi sono già stati vinti`}, ma il trofeo brillante è ancora in palio ✨`
-    : n === 1
-      ? 'Il primo che indovina tutto vince un premio!'
-      : `I primi ${n} che indovinano tutto vincono un premio!`;
-  const still = left && left < n ? `<small>${left === 1 ? 'Resta un solo premio: sbrigati!' : `Restano ${left} premi su ${n}`}</small>` : '';
-  return `<div class="quiz-prize ${left ? '' : 'gone'}"><span class="qp-gift" aria-hidden="true">🎁</span><b>${text}</b>${still}</div>`;
+  if (qz.closed) {
+    return `<div class="quiz-prize gone"><span class="qp-gift" aria-hidden="true">🎉</span><b>Classifica chiusa: i premi sono assegnati!</b><small>Il trofeo resta in palio per tutti ✨</small></div>`;
+  }
+  const text = n === 1 ? 'Il primo in classifica vince un premio!' : `I primi ${n} in classifica vincono un premio!`;
+  return `<div class="quiz-prize"><span class="qp-gift" aria-hidden="true">🎁</span><b>${text}</b>
+    <small>Più risposte giuste, più sali; a pari punti vince chi finisce prima. Vale la classifica al lancio del bouquet 💐</small></div>`;
 }
 
 const RIGHT_WORDS = ['🎉 Esatto!', '🎯 Centro!', '💙 Li conosci bene!', '✨ Giusto!', '🥂 Perfetto!'];
@@ -1660,7 +1670,7 @@ async function viewQuiz(main) {
   const showIntro = () => {
     main.innerHTML = `<div class="container quiz">${top()}
       <section class="card quiz-intro">
-        ${prizeHTML({ ...S.settings.quiz, prizes: data.prizes })}
+        ${prizeHTML({ ...S.settings.quiz, prizes: data.prizes, closed: data.closed })}
         <div class="qc-trophy big">${trophySVG('shiny')}</div>
         <h2 class="qc-title">${esc(data.title)}</h2>
         ${data.intro ? `<p>${richText(data.intro)}</p>` : ''}
@@ -1726,7 +1736,7 @@ async function viewQuiz(main) {
         : `<b>${COMFORT_WORDS[misses++ % COMFORT_WORDS.length]}</b>
            <p>La risposta giusta? Resta un segreto 🤫</p>`;
       if (r.correct && item.effect) {
-        import('./effects.js').then((m) => m.playEffect(item.effect)).catch(() => {});
+        import('./effects.js').then((m) => m.playEffect(item.effect, { label: item.effectLabel })).catch(() => {});
       } else if (r.correct) {
         const b = btn.getBoundingClientRect();
         confetti({ x: b.left + b.width / 2, y: b.top + b.height / 2, count: 60, spread: 55, power: 0.9 });
@@ -1751,27 +1761,21 @@ async function viewQuiz(main) {
         <div class="qc-label">${trophyTitle(data.trophy)}</div>
         <h2 class="qc-title">${headline}</h2>
         <p class="qr-score">Hai indovinato <b>${data.score}</b> risposte su <b>${total}</b></p>
-        ${
-          shiny && data.prizes
-            ? data.place && data.place <= data.prizes
-              ? `<div class="quiz-prize won"><b>${placeText(data.place)}</b><small>Gli sposi ti aspettano per consegnartelo</small></div>`
-              : '<p class="small muted">I premi erano già stati vinti, ma il trofeo brillante è tutto tuo ✨</p>'
-            : ''
-        }
+        ${data.prizes ? placeHTML(data.place, { prizes: data.prizes, closed: data.closed }, true) : ''}
         <p class="muted">${comment}</p>
         ${shiny ? '' : '<p class="small muted">Il trofeo brillante va solo a chi indovina tutte le risposte ✨</p>'}
         <p class="small muted">Da ora il trofeo compare accanto al tuo nome${S.settings.mode === 'live' ? ', anche nella chat LIVE' : ' e, il giorno delle nozze, nella chat LIVE'}.</p>
         <a class="btn primary block" href="#home">Torna alla Home</a>
       </section>
       <section class="card champions">
-        <h3 class="card-title small-title">✨ Albo d'oro</h3>
-        <p class="small muted">Chi ha indovinato tutte le risposte</p>
+        <h3 class="card-title small-title">🏆 Classifica</h3>
+        <p class="small muted">${data.closed ? 'Chiusa al lancio del bouquet' : 'Più risposte giuste, più sali; a pari punti vince chi finisce prima'}</p>
         ${
-          data.champions.length
-            ? `<ol class="mates podium">${data.champions
+          data.leaderboard.length
+            ? `<ol class="mates podium">${data.leaderboard
                 .map(
-                  (n, k) =>
-                    `<li><span class="medal" aria-hidden="true">${k < data.prizes ? MEDALS[k] || '🏅' : ''}</span><span class="avatar sm" style="background:${colorFor(n)}">${esc(initials(n))}</span><span class="pd-name">${esc(n)}${trophyBadge('shiny', 'trophy-mini')}</span>${k < data.prizes ? '<span class="pd-prize">🎁 premio</span>' : ''}</li>`,
+                  (r, k) =>
+                    `<li class="${r.me ? 'me' : ''}"><span class="medal" aria-hidden="true">${MEDALS[k] || `${k + 1}°`}</span><span class="avatar sm" style="background:${colorFor(r.name)}">${esc(initials(r.name))}</span><span class="pd-name">${esc(r.name)}${r.shiny ? trophyBadge('shiny', 'trophy-mini') : ''}</span><span class="pd-score">${r.score}/${total}</span>${k < data.prizes ? '<span class="pd-prize">🎁</span>' : ''}</li>`,
                 )
                 .join('')}</ol>`
             : '<p class="muted">Ancora nessuno: tocca agli altri invitati!</p>'

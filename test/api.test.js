@@ -369,14 +369,14 @@ test('style options and card images', async () => {
   assert.equal((await fetch(`${BASE}/uploads/${up.data.file}`)).status, 200);
 });
 
-test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one', async () => {
+test('quiz: answers stay secret, trophies for all, a leaderboard frozen at the bouquet toss', async () => {
   assert.equal((await mario.get('/api/quiz')).status, 404, 'no quiz yet');
   assert.equal((await mario.get('/api/state')).data.settings.quiz, null);
   const quiz = {
     title: 'Quanto conosci gli sposi?',
     prizes: 3,
     questions: [
-      { emoji: '🎂', text: 'Domanda uno', options: ['A', '', 'B', 'C'], answer: 2, fact: 'Era B', effect: 'drago' },
+      { emoji: '🎂', text: 'Domanda uno', options: ['A', '', 'B', 'C'], answer: 2, fact: 'Era B', effect: 'macellaio', effectLabel: 'BOTTEGA' },
       { text: 'Domanda due', options: ['Sì', 'No'], answer: 0, effect: '<script>' },
       { text: 'Una sola opzione', options: ['solo questa'] },
     ],
@@ -385,26 +385,26 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
   assert.equal(saved.questions.length, 2, 'a question needs at least two options');
   assert.deepEqual(saved.questions[0].options, ['A', 'B', 'C']);
   assert.equal(saved.questions[0].answer, 1, 'the right answer follows its option');
-  assert.deepEqual(saved.questions.map((x) => x.effect), ['drago', ''], 'only known effects');
+  assert.deepEqual(saved.questions.map((x) => x.effect), ['macellaio', ''], 'only known effects');
 
   const pub = (await client().get('/api/state')).data.settings.quiz;
   assert.deepEqual(
     pub,
-    { title: 'Quanto conosci gli sposi?', intro: '', count: 2, prizes: 3, prizesLeft: 3 },
+    { title: 'Quanto conosci gli sposi?', intro: '', count: 2, prizes: 3, closed: false },
     'no questions in the public state',
   );
   assert.equal((await client().get('/api/quiz')).status, 401);
 
   const game = (await mario.get('/api/quiz')).data;
   assert.equal(game.questions[0].answer, undefined, 'answers stay on the server');
-  assert.equal(game.questions[0].effect, 'drago');
+  assert.deepEqual([game.questions[0].effect, game.questions[0].effectLabel], ['macellaio', 'BOTTEGA']);
   const wrong = await mario.post('/api/quiz/answer', { index: 0, choice: 0 });
   assert.deepEqual([wrong.data.correct, wrong.data.answer, wrong.data.fact], [false, undefined, ''], 'no spoilers');
   assert.equal((await mario.post('/api/quiz/answer', { index: 0, choice: 1 })).status, 409, 'no second chances');
   assert.equal((await mario.post('/api/quiz/answer', { index: 1, choice: 5 })).status, 400);
   const last = await mario.post('/api/quiz/answer', { index: 1, choice: 0 });
   assert.equal(last.data.trophy, 'classic', 'a trophy for everyone who finishes');
-  assert.deepEqual(last.data.me.quiz, { answered: 2, score: 1, done: true, place: null });
+  assert.deepEqual(last.data.me.quiz, { answered: 2, score: 1, done: true, place: 1 }, 'alone, so first for now');
   const review = (await mario.get('/api/quiz')).data.questions[0];
   assert.deepEqual([review.chosen, review.correct, review.answer], [0, false, undefined], 'own answers only, never the right one');
 
@@ -412,10 +412,16 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
   assert.deepEqual([right.data.correct, right.data.fact], [true, 'Era B']);
   const annaDone = await anna.post('/api/quiz/answer', { index: 1, choice: 0 });
   assert.equal(annaDone.data.trophy, 'shiny');
-  assert.equal(annaDone.data.place, 1, 'first with everything right: a prize');
-  assert.equal(last.data.place, null);
-  assert.equal((await anna.get('/api/state')).data.settings.quiz.prizesLeft, 2);
-  assert.deepEqual((await mario.get('/api/quiz')).data.champions, ['Anna Bianchi']);
+  assert.equal(annaDone.data.place, 1, 'more right answers: she overtakes Mario');
+  const board = (await mario.get('/api/quiz')).data;
+  assert.equal(board.place, 2);
+  assert.deepEqual(
+    board.leaderboard.map((r) => [r.name, r.score, r.shiny, r.me]),
+    [
+      ['Anna Bianchi', 2, true, false],
+      ['Mario Rossi', 1, false, true],
+    ],
+  );
   assert.equal((await anna.get('/api/state')).data.me.trophy, 'shiny');
 
   // The trophy shows next to the name in the Chat LIVE.
@@ -426,7 +432,19 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
 
   const stats = (await admin.get('/api/admin/overview')).data.quiz;
   assert.deepEqual([stats.finished, stats.shiny, stats.prizes], [2, 1, 3]);
-  assert.deepEqual(stats.winners.map((w) => w.name), ['Anna Bianchi'], 'the couple sees who wins the prizes');
+  assert.deepEqual(stats.winners.map((w) => w.name), ['Anna Bianchi', 'Mario Rossi'], 'the couple sees who wins the prizes');
+
+  // Bouquet toss: the podium is final, later games do not count for it.
+  await admin.post('/api/admin/quiz/close', { closed: true });
+  assert.equal((await client().get('/api/state')).data.settings.quiz.closed, true);
+  const luca = client();
+  await luca.post('/api/register', { name: 'Luca Verdi', email: 'luca@example.com' });
+  await luca.post('/api/quiz/answer', { index: 0, choice: 1 });
+  const late = await luca.post('/api/quiz/answer', { index: 1, choice: 0 });
+  assert.deepEqual([late.data.trophy, late.data.place], ['shiny', null], 'trophy yes, podium no');
+  assert.deepEqual((await admin.get('/api/admin/overview')).data.quiz.winners.map((w) => w.name), ['Anna Bianchi', 'Mario Rossi']);
+
   await admin.post('/api/admin/quiz/reset');
+  assert.equal((await client().get('/api/state')).data.settings.quiz.closed, false, 'a reset reopens the game');
   assert.equal((await anna.get('/api/state')).data.me.trophy, null);
 });

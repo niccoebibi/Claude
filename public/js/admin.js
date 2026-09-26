@@ -1267,7 +1267,7 @@ async function adminContent(main) {
 /* The couple's quiz                                                   */
 /* ================================================================== */
 
-const QUIZ_OPTIONS = 4;
+const QUIZ_OPTIONS = 5;
 // Same list as EFFECTS in effects.js, which is loaded only when an effect plays.
 const QUIZ_EFFECTS = {
   drago: '🐉 Drago sputafuoco',
@@ -1277,6 +1277,9 @@ const QUIZ_EFFECTS = {
   borsa: '🔔 Campana della borsa',
   fulmine: '⚡ Fulmini ad alta tensione',
   brindisi: '🥂 Brindisi',
+  viaggio: '✈️ Aereo con striscione',
+  macellaio: '🔪 Macellaio al lavoro',
+  trattore: '🚜 Trattore stile videogioco',
 };
 
 function questionEditor(item, i, n) {
@@ -1299,7 +1302,7 @@ function questionEditor(item, i, n) {
           .map(
             (o, k) => `<label class="q-opt">
               <input type="radio" name="ans-${i}" value="${k}" ${item.answer === k ? 'checked' : ''} aria-label="Risposta giusta" />
-              <input data-opt value="${esc(o)}" maxlength="120" placeholder="Risposta ${'ABCD'[k]}${k > 1 ? ' (facoltativa)' : ''}" />
+              <input data-opt value="${esc(o)}" maxlength="120" placeholder="Risposta ${'ABCDEF'[k]}${k > 1 ? ' (facoltativa)' : ''}" />
             </label>`,
           )
           .join('')}
@@ -1316,6 +1319,7 @@ function questionEditor(item, i, n) {
           <button type="button" class="btn small ghost" data-try>▶ Prova</button>
         </div>
       </div>
+      <label class="field"><span>Scritta nell'effetto (facoltativa: il nome sul grembiule, lo striscione dell'aereo…)</span><input data-f="effectLabel" value="${esc(item.effectLabel || '')}" maxlength="24" /></label>
     </div>`;
 }
 
@@ -1339,18 +1343,25 @@ async function adminQuiz(main) {
       ${
         st.prizes
           ? `<section class="card">
-              <h3 class="card-title small-title">🎁 Chi vince i premi</h3>
-              <p class="small muted">I primi ${st.prizes} che indovinano tutte le risposte, in ordine di arrivo.</p>
+              <h3 class="card-title small-title">🎁 ${st.closedAt ? 'I vincitori dei premi' : 'Il podio in questo momento'}</h3>
+              <p class="small muted">${
+                st.closedAt
+                  ? `Classifica chiusa ${esc(fmtDateTime(new Date(st.closedAt).toISOString(), tz()))}: questi sono i vincitori.`
+                  : `Più risposte giuste, poi chi ha finito prima. Al lancio del bouquet chiudete la classifica: i primi ${st.prizes} vincono.`
+              }</p>
               ${
                 st.winners.length
                   ? `<ol class="mates podium">${st.winners
                       .map(
                         (w, k) =>
-                          `<li><span class="medal">${medals[k] || '🏅'}</span><span class="pd-name">${esc(w.name)}</span><span class="small muted">${esc(fmtDateTime(new Date(w.at).toISOString(), tz()))}</span></li>`,
+                          `<li><span class="medal">${medals[k] || '🏅'}</span><span class="pd-name">${esc(w.name)}</span><span class="pd-score">${w.score}/${quiz.questions.length}</span></li>`,
                       )
                       .join('')}</ol>`
-                  : '<p class="muted">Ancora nessuno ha indovinato tutto.</p>'
+                  : '<p class="muted">Ancora nessuno ha finito il gioco.</p>'
               }
+              <button type="button" class="btn ${st.closedAt ? 'ghost' : 'primary'} block" id="quiz-close">${
+                st.closedAt ? 'Riapri la classifica' : '💐 Chiudi la classifica (lancio del bouquet)'
+              }</button>
             </section>`
           : ''
       }
@@ -1359,7 +1370,7 @@ async function adminQuiz(main) {
           <label class="switch-row"><input type="checkbox" name="enabled" ${quiz.enabled ? 'checked' : ''}/> <span>Gioco visibile agli invitati</span></label>
           <label class="field"><span>Titolo</span><input name="title" maxlength="120" value="${esc(quiz.title)}" /></label>
           <label class="field"><span>Presentazione</span><textarea name="intro" rows="3" maxlength="600">${esc(quiz.intro)}</textarea></label>
-          <label class="field"><span>Premi per i primi che indovinano tutto (0 = nessun premio)</span><input name="prizes" type="number" min="0" max="10" inputmode="numeric" value="${Number(quiz.prizes) || 0}" /></label>
+          <label class="field"><span>Premi per i primi in classifica (0 = nessun premio)</span><input name="prizes" type="number" min="0" max="10" inputmode="numeric" value="${Number(quiz.prizes) || 0}" /></label>
         </section>
         <h3 class="section-label">Domande</h3>
         <p class="small muted">Da due a quattro risposte per domanda: tocca il pallino accanto a quella giusta.</p>
@@ -1384,6 +1395,7 @@ async function adminQuiz(main) {
       answer: Number($('input[type=radio]:checked', el)?.value ?? -1),
       fact: $('[data-f=fact]', el).value.trim(),
       effect: $('[data-f=effect]', el).value,
+      effectLabel: $('[data-f=effectLabel]', el).value.trim(),
     }));
   const draw = () => {
     box.innerHTML = questions.length
@@ -1403,10 +1415,11 @@ async function adminQuiz(main) {
     if (!btn) return;
     const i = Number(btn.closest('[data-i]').dataset.i);
     if (btn.matches('[data-try]')) {
-      const effect = $('[data-f=effect]', btn.closest('[data-i]')).value;
+      const box = btn.closest('[data-i]');
+      const effect = $('[data-f=effect]', box).value;
       if (!effect) return confetti({ count: 90 });
       unlockAudio();
-      return import('./effects.js').then((m) => m.playEffect(effect));
+      return import('./effects.js').then((m) => m.playEffect(effect, { label: $('[data-f=effectLabel]', box).value.trim() }));
     }
     questions = read();
     if (btn.dataset.move) {
@@ -1417,6 +1430,18 @@ async function adminQuiz(main) {
       questions.splice(i, 1);
     }
     draw();
+  });
+
+  $('#quiz-close', main)?.addEventListener('click', async () => {
+    const closing = !st.closedAt;
+    if (closing && !(await confirmDialog('Chiudere la classifica? Il podio di adesso vince i premi; chi finisce dopo riceve solo il trofeo.', { ok: 'Chiudi' }))) return;
+    try {
+      await api('/api/admin/quiz/close', { method: 'POST', body: { closed: closing } });
+      toast(closing ? 'Classifica chiusa: ecco i vincitori 🎉' : 'Classifica riaperta');
+      ctx.route();
+    } catch (err) {
+      errorToast(err);
+    }
   });
 
   $('#quiz-reset', main)?.addEventListener('click', async () => {

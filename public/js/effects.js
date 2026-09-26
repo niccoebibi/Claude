@@ -10,6 +10,9 @@ export const EFFECTS = {
   borsa: '🔔 Campana della borsa',
   fulmine: '⚡ Fulmini ad alta tensione',
   brindisi: '🥂 Brindisi',
+  viaggio: '✈️ Aereo con striscione',
+  macellaio: '🔪 Macellaio al lavoro',
+  trattore: '🚜 Trattore stile videogioco',
 };
 
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -712,7 +715,7 @@ async function storm() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Cheers: a rosé and a red, clinking                                  */
+/* Cheers: two glasses of rosé, clinking                              */
 /* ------------------------------------------------------------------ */
 
 const GLASS = (wine) => [
@@ -732,7 +735,7 @@ const GLASS = (wine) => [
   ['glass', 2, 13, 6, 1],
   ['rim', 1, 14, 8, 1],
 ];
-const GLASS_PAL = { rim: '#9fb6d0', glass: '#eaf4ff', shine: '#ffffff', rose: '#ff8fb1', red: '#9b1b30' };
+const GLASS_PAL = { rim: '#9fb6d0', glass: '#eaf4ff', shine: '#ffffff', rose: '#ff8fb1' };
 
 async function cheers() {
   const fx = overlay('fx-cheers', '<div class="fx-cincin">CIN CIN!</div>');
@@ -750,7 +753,6 @@ async function cheers() {
     return c;
   };
   const rose = pixelGlass('rose');
-  const red = pixelGlass('red');
   const bubbles = Array.from({ length: 40 }, () => ({ x: Math.random() * W, y: H + Math.random() * H, r: 2 + Math.random() * 5, v: 1 + Math.random() * 2.5 }));
   const sparks = [];
   let clinked = false;
@@ -772,7 +774,7 @@ async function cheers() {
     const back = t > 700 ? Math.sin(Math.min(1, (t - 700) / 250) * Math.PI) * 0.6 : 0;
     const gap = (1 - ease) * (W / 2 + 10 * s) + back * s;
     const tilt = 0.22 * ease;
-    for (const [side, img] of [[-1, rose], [1, red]]) {
+    for (const [side, img] of [[-1, rose], [1, rose]]) {
       g.save();
       g.translate(W / 2 + side * (gap + 5 * s), cy);
       g.rotate(-side * tilt);
@@ -802,6 +804,413 @@ async function cheers() {
   fx.remove();
 }
 
+/* ------------------------------------------------------------------ */
+/* Pixel helpers for the scenes below                                   */
+/* ------------------------------------------------------------------ */
+
+/** A filled pixel disc (or ring, with an inner radius) in units of s pixels. */
+function disc(g, cx, cy, r, color, s = 1, inner = -1) {
+  g.fillStyle = color;
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      const d = x * x + y * y;
+      if (d <= r * r + r * 0.8 && (inner < 0 || d > inner * inner + inner * 0.8)) g.fillRect((cx + x) * s, (cy + y) * s, s, s);
+    }
+  }
+}
+
+function tabbarHeight() {
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h')) || 64;
+}
+
+function arcadeText(g, text, x, y, size, fill, shadow) {
+  g.font = `${size}px "Press Start 2P", ui-monospace, monospace`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  if (shadow) {
+    g.fillStyle = shadow;
+    g.fillText(text, x + size * 0.18, y + size * 0.18);
+  }
+  g.fillStyle = fill;
+  g.fillText(text, x, y);
+}
+
+/* ------------------------------------------------------------------ */
+/* The butcher: a name on the apron, a cleaver, CHOP!                   */
+/* ------------------------------------------------------------------ */
+
+const BUTCHER_PAL = {
+  hat: '#ffffff',
+  hatD: '#d9e0ea',
+  skin: '#f2c29b',
+  skinD: '#d9a07a',
+  hair: '#4a2f1d',
+  eye: '#1a1a1a',
+  mouth: '#9b3b3b',
+  shirt: '#ffffff',
+  shirtD: '#d7dee8',
+  apron: '#8e1f2c',
+  apronD: '#6d1621',
+  steel: '#cfd6de',
+  edge: '#ffffff',
+  handle: '#5a3a1a',
+  meat: '#d9474f',
+  meatD: '#a8323a',
+  fat: '#f6d2c4',
+  wood: '#9b6a3c',
+  woodD: '#7a4f2a',
+};
+const BUTCHER = [
+  ['hat', 10, 0, 12, 3],
+  ['hatD', 10, 2, 12, 1],
+  ['hat', 9, 3, 14, 2],
+  ['skin', 10, 5, 12, 9],
+  ['skin', 9, 8, 1, 2],
+  ['skin', 22, 8, 1, 2],
+  ['hair', 12, 7, 3, 1],
+  ['hair', 17, 7, 3, 1],
+  ['eye', 13, 8, 2, 1],
+  ['eye', 17, 8, 2, 1],
+  ['skinD', 15, 9, 2, 2],
+  ['hair', 12, 11, 8, 2],
+  ['hair', 11, 12, 1, 1],
+  ['hair', 20, 12, 1, 1],
+  ['mouth', 14, 13, 4, 1],
+  ['skinD', 14, 14, 4, 1],
+  ['shirt', 7, 15, 18, 14],
+  ['shirtD', 7, 15, 18, 1],
+  ['apron', 10, 17, 12, 12],
+  ['apron', 10, 15, 2, 2],
+  ['apron', 20, 15, 2, 2],
+  ['apronD', 10, 28, 12, 1],
+  ['shirt', 4, 16, 3, 8],
+];
+const ARM_UP = [
+  ['shirt', 25, 10, 3, 7],
+  ['skin', 25, 8, 3, 2],
+  ['handle', 26, 4, 1, 4],
+  ['steel', 23, -1, 7, 5],
+  ['edge', 23, -1, 7, 1],
+];
+const ARM_DOWN_CHOP = [
+  ['shirt', 25, 15, 3, 6],
+  ['shirt', 22, 21, 4, 2],
+  ['skin', 19, 20, 3, 2],
+  ['handle', 17, 20, 2, 1],
+  ['steel', 13, 19, 5, 4],
+  ['edge', 13, 22, 5, 1],
+];
+
+async function butcher({ label = '' } = {}) {
+  const fx = overlay('fx-butcher', '<div class="fx-chop">CHOP!</div>');
+  const g = fullCanvas(fx);
+  g.imageSmoothingEnabled = false;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const s = Math.max(5, Math.floor(Math.min(W / 34, (H * 0.6) / 36)));
+  const ox = Math.round(W / 2 - 16 * s);
+  const oy = Math.round(H * 0.7 - 27 * s);
+  const chopEl = fx.querySelector('.fx-chop');
+  const bits = [];
+  const text = (label || '').toUpperCase();
+  let chops = 0;
+  requestAnimationFrame(() => fx.classList.add('on'));
+  const start = performance.now();
+  await loop((now) => {
+    const t = now - start;
+    const phase = t % 620;
+    const down = t > 300 && t < 2900 && phase > 380;
+    if (down && chops < Math.floor((t - 300) / 620) + 1) {
+      chops++;
+      for (let i = 0; i < 9; i++) {
+        bits.push({ x: ox + 16 * s, y: oy + 24 * s, vx: (Math.random() - 0.5) * 9, vy: -3 - Math.random() * 6, c: i % 3 ? 'meat' : 'fat' });
+      }
+      chopEl.classList.remove('go');
+      void chopEl.offsetWidth;
+      chopEl.classList.add('go');
+      document.getElementById('view')?.animate(
+        [{ transform: 'translateY(0)' }, { transform: 'translateY(3px)' }, { transform: 'translateY(0)' }],
+        { duration: 120 },
+      );
+    }
+    // Tiled wall and the counter.
+    g.fillStyle = '#eef3f6';
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = '#cfd9df';
+    for (let y = 0; y < H; y += 4 * s) g.fillRect(0, y, W, Math.max(1, s / 3));
+    for (let x = 0; x < W; x += 4 * s) g.fillRect(x, 0, Math.max(1, s / 3), H);
+    sprite(g, BUTCHER, BUTCHER_PAL, ox, oy, s);
+    if (text) {
+      const size = Math.min(2.4 * s, (11 * s) / (text.length * 0.95));
+      arcadeText(g, text, ox + 16 * s, oy + 20.8 * s, size, '#fff3d6');
+    }
+    sprite(g, down ? ARM_DOWN_CHOP : ARM_UP, BUTCHER_PAL, ox, oy, s);
+    // The block and the meat on it.
+    g.fillStyle = BUTCHER_PAL.woodD;
+    g.fillRect(0, oy + 27 * s, W, H - oy - 27 * s);
+    g.fillStyle = BUTCHER_PAL.wood;
+    g.fillRect(0, oy + 27 * s, W, 2 * s);
+    sprite(
+      g,
+      [
+        ['meat', 9, 24, 14, 3],
+        ['meatD', 9, 26, 14, 1],
+        ['fat', 10, 24, 12, 1],
+        ['fat', 21, 25, 2, 1],
+        ['skin', 6, 23, 4, 2],
+      ],
+      BUTCHER_PAL,
+      ox,
+      oy,
+      s,
+    );
+    for (const b of bits) {
+      b.x += b.vx;
+      b.y += b.vy;
+      b.vy += 0.5;
+      g.fillStyle = BUTCHER_PAL[b.c];
+      g.fillRect(Math.round(b.x), Math.round(b.y), s, s);
+    }
+    return t < 3300;
+  });
+  fx.classList.remove('on');
+  await wait(300);
+  fx.remove();
+}
+
+/* ------------------------------------------------------------------ */
+/* The tractor: small Metal Slug–style sprite driving across the screen */
+/* ------------------------------------------------------------------ */
+
+function drawTractor(g, frame) {
+  const r = (c, x, y, w, h) => {
+    g.fillStyle = c;
+    g.fillRect(x, y, w, h);
+  };
+  // Trailer with hay bales (behind, on the left).
+  r('#8b5a2b', 0, 26, 26, 4);
+  r('#6b4420', 0, 29, 26, 1);
+  for (const [x, y] of [[1, 18], [9, 18], [17, 18], [5, 11], [13, 11]]) {
+    r('#e9c46a', x, y, 8, 8);
+    r('#c9a44a', x, y + 3, 8, 1);
+    r('#f4dc97', x, y, 8, 1);
+  }
+  r('#333', 26, 28, 6, 1);
+  disc(g, 13, 34, 4, '#1d1d1d');
+  disc(g, 13, 34, 2, '#9aa3ad');
+  // Tractor body.
+  const X = 30;
+  r('#8e241c', X + 16, 26, 16, 4);
+  r('#d23b2f', X + 16, 17, 20, 9);
+  r('#f06a5a', X + 16, 17, 20, 1);
+  r('#333', X + 35, 18, 2, 8);
+  r('#ffe066', X + 36, 18, 1, 2);
+  r('#444', X + 28, 6, 2, 11);
+  r('#555', X + 27, 5, 4, 1);
+  r('#d23b2f', X + 0, 16, 17, 4);
+  r('#f06a5a', X + 0, 16, 17, 1);
+  r('#2a2a2a', X + 5, 12, 6, 4);
+  r('#333', X + 13, 10, 1, 7);
+  r('#333', X + 11, 9, 5, 1);
+  // The driver, waving.
+  r('#3b2a1e', X + 6, 1, 5, 2);
+  r('#f2c29b', X + 6, 3, 5, 4);
+  r('#111', X + 7, 4, 4, 1);
+  r('#ffffff', X + 6, 7, 6, 6);
+  r('#f2c29b', X + 12, 8, 2, 2);
+  if (frame % 2) r('#f2c29b', X + 3, 2, 2, 5);
+  else r('#f2c29b', X + 2, 5, 2, 4);
+  r('#2f5fa8', X + 6, 13, 6, 3);
+  // Wheels: big rear, small front, spokes turning.
+  disc(g, X + 9, 31, 8, '#1d1d1d');
+  disc(g, X + 9, 31, 5, '#f2c230');
+  disc(g, X + 9, 31, 2, '#8e241c');
+  if (frame % 2) {
+    r('#1d1d1d', X + 9, 27, 1, 3);
+    r('#1d1d1d', X + 9, 33, 1, 3);
+  } else {
+    r('#1d1d1d', X + 5, 31, 3, 1);
+    r('#1d1d1d', X + 11, 31, 3, 1);
+  }
+  disc(g, X + 31, 34, 5, '#1d1d1d');
+  disc(g, X + 31, 34, 2, '#f2c230');
+}
+
+async function tractor() {
+  const fx = overlay('fx-tractor', '<div class="fx-mission">MISSION<br>COMPLETE!</div>');
+  const g = fullCanvas(fx);
+  g.imageSmoothingEnabled = false;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const s = Math.max(2, Math.min(4, Math.floor(W / 110)));
+  const ground = H - tabbarHeight() - 24;
+  const sheet = document.createElement('canvas');
+  sheet.width = 70;
+  sheet.height = 40;
+  const sg = sheet.getContext('2d');
+  const smoke = [];
+  const dust = [];
+  const trip = 3600;
+  requestAnimationFrame(() => fx.classList.add('on'));
+  const start = performance.now();
+  await loop((now) => {
+    const t = now - start;
+    const frame = Math.floor(t / 110);
+    const x = -70 * s + ((W + 80 * s) * Math.min(1, t / trip));
+    const y = ground - 39 * s + (frame % 2 ? -s : 0);
+    g.clearRect(0, 0, W, H);
+    // A strip of field to drive on.
+    g.fillStyle = '#7a5230';
+    g.fillRect(0, ground, W, 24);
+    g.fillStyle = '#5c9e3a';
+    g.fillRect(0, ground - s, W, 2 * s);
+    for (let gx = (frame * 2) % 12; gx < W; gx += 12 * s) g.fillRect(gx, ground - 3 * s, s, 2 * s);
+    if (frame % 3 === 0 && smoke.length < 60) smoke.push({ x: x + 59 * s, y: y + 4 * s, r: s * 1.2, a: 0.75 });
+    if (frame % 2 === 0 && dust.length < 60) dust.push({ x: x + 30 * s, y: ground - s, vx: -1 - Math.random(), vy: -Math.random() * 1.5, a: 0.7 });
+    for (const p of smoke) {
+      p.y -= 0.9;
+      p.x -= 0.6;
+      p.r += 0.12;
+      p.a -= 0.012;
+      if (p.a > 0) disc(g, Math.round(p.x / s), Math.round(p.y / s), Math.round(p.r / s), `rgba(130,130,130,${p.a})`, s);
+    }
+    for (const p of dust) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.a -= 0.02;
+      if (p.a > 0) {
+        g.fillStyle = `rgba(160,110,60,${p.a})`;
+        g.fillRect(Math.round(p.x), Math.round(p.y), s, s);
+      }
+    }
+    sg.clearRect(0, 0, 70, 40);
+    drawTractor(sg, frame);
+    g.drawImage(sheet, Math.round(x), Math.round(y), 70 * s, 40 * s);
+    return t < trip + 300;
+  });
+  fx.classList.remove('on');
+  await wait(300);
+  fx.remove();
+}
+
+/* ------------------------------------------------------------------ */
+/* A trip together: dunes, sea, a plane towing a banner                 */
+/* ------------------------------------------------------------------ */
+
+function islandBackground(g, W, H, s, t) {
+  const horizon = Math.round(H * 0.5);
+  g.fillStyle = '#79c7f2';
+  g.fillRect(0, 0, W, horizon);
+  g.fillStyle = '#a8dcf7';
+  g.fillRect(0, horizon - 4 * s, W, 4 * s);
+  disc(g, Math.round((W * 0.18) / s), Math.round((H * 0.14) / s), 4, '#ffe066', s);
+  // Volcanic hills on the horizon.
+  g.fillStyle = '#9c6b4e';
+  for (let x = 0; x < W; x += s) {
+    const h = Math.max(0, Math.sin(x / (W * 0.18)) * 7 + Math.sin(x / (W * 0.07)) * 3 + 2);
+    g.fillRect(x, horizon - Math.round(h) * s, s, Math.round(h) * s);
+  }
+  g.fillStyle = '#2bb6c9';
+  g.fillRect(0, horizon, W, Math.round(H * 0.14));
+  g.fillStyle = '#c9f3f7';
+  for (let i = 0; i < 10; i++) g.fillRect(((i * 83 + t * 0.04) % (W + 40)) - 20, horizon + ((i * 37) % Math.round(H * 0.12)), 3 * s, s);
+  // Golden dunes.
+  const top = horizon + Math.round(H * 0.14);
+  g.fillStyle = '#f2d27e';
+  g.fillRect(0, top, W, H - top);
+  g.fillStyle = '#e4bd5f';
+  for (let x = 0; x < W; x += s) {
+    const h = Math.round(Math.max(0, Math.sin(x / (W * 0.22) + 1) * 6 + 4));
+    g.fillRect(x, top + (12 - h) * s, s, s * 2);
+  }
+}
+
+async function trip({ label = '' } = {}) {
+  const fx = overlay('fx-trip');
+  const g = fullCanvas(fx);
+  g.imageSmoothingEnabled = false;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const s = Math.max(4, Math.floor(Math.min(W / 60, H / 90)));
+  const words = (label || 'BUON VIAGGIO!').toUpperCase();
+  const fontSize = Math.max(10, Math.round(s * 2.4));
+  g.font = `${fontSize}px "Press Start 2P", ui-monospace, monospace`;
+  const bannerW = g.measureText(words).width + 4 * s;
+  const coupleX = Math.round(W * 0.66);
+  const coupleY = Math.round(H * 0.74);
+  const span = W + bannerW + 40 * s;
+  requestAnimationFrame(() => fx.classList.add('on'));
+  const start = performance.now();
+  await loop((now) => {
+    const t = now - start;
+    islandBackground(g, W, H, s, t);
+    // The plane flies right to left, towing the banner.
+    const px = W + 4 * s - (span * Math.min(1, t / 3400));
+    const py = Math.round(H * 0.24 + Math.sin(t / 300) * s);
+    sprite(
+      g,
+      [
+        ['body', 0, 2, 14, 3],
+        ['body', -2, 3, 2, 1],
+        ['wing', 5, 0, 4, 7],
+        ['tail', 12, 0, 2, 2],
+        ['glass', 1, 2, 3, 1],
+        ['prop', -3, (Math.floor(t / 60) % 2) * 2 + 1, 1, 3],
+      ],
+      { body: '#ffffff', wing: '#e8445a', tail: '#e8445a', glass: '#3a7bd5', prop: '#555' },
+      px,
+      py,
+      s,
+    );
+    g.strokeStyle = '#555';
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(px + 14 * s, py + 3.5 * s);
+    g.lineTo(px + 20 * s, py + 3.5 * s);
+    g.stroke();
+    const bx = px + 20 * s;
+    for (let x = 0; x < bannerW; x += s) {
+      const wave = Math.round(Math.sin((x + t * 0.25) / (6 * s)) * 0.8) * s;
+      g.fillStyle = '#ffffff';
+      g.fillRect(bx + x, py + wave, s, 7 * s);
+      g.fillStyle = '#d9e2ea';
+      g.fillRect(bx + x, py + wave + 6 * s, s, s);
+    }
+    g.font = `${fontSize}px "Press Start 2P", ui-monospace, monospace`;
+    g.textAlign = 'left';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#e8445a';
+    g.fillText(words, bx + 2 * s, py + 3.6 * s);
+    // The two of them on the dune, and a heart.
+    sprite(
+      g,
+      [
+        ['hairB', 0, 0, 4, 2],
+        ['skin', 0, 2, 4, 3],
+        ['hairB', -1, 1, 1, 5],
+        ['dress', 0, 5, 4, 6],
+        ['skin', 4, 6, 2, 1],
+        ['hairN', 7, 0, 4, 2],
+        ['skin', 7, 2, 4, 3],
+        ['shirt', 7, 5, 4, 4],
+        ['legs', 7, 9, 4, 2],
+      ],
+      { hairB: '#f7d774', hairN: '#3b2a1e', skin: '#f6c9a0', dress: '#ff5470', shirt: '#ffffff', legs: '#2f5fa8' },
+      coupleX,
+      coupleY,
+      s,
+    );
+    if (t > 900) {
+      const hy = coupleY - 6 * s - Math.min(12, (t - 900) / 120) * s;
+      sprite(g, [['h', 0, 0, 2, 1], ['h', 3, 0, 2, 1], ['h', -1, 1, 7, 2], ['h', 0, 3, 5, 1], ['h', 1, 4, 3, 1], ['h', 2, 5, 1, 1]], { h: '#e8323c' }, coupleX + 3 * s, hy, s);
+    }
+    return t < 3700;
+  });
+  fx.classList.remove('on');
+  await wait(300);
+  fx.remove();
+}
+
 const PLAYERS = {
   drago: dragon,
   anelli: rings,
@@ -810,10 +1219,16 @@ const PLAYERS = {
   borsa: market,
   fulmine: storm,
   brindisi: cheers,
+  viaggio: trip,
+  macellaio: butcher,
+  trattore: tractor,
 };
 
-/** Play a named celebration. Resolves when it is over (at once if motion is reduced). */
-export async function playEffect(name) {
+/**
+ * Play a named celebration. `label` is the text some scenes show (a name on an apron,
+ * a banner). Resolves when it is over (at once if motion is reduced).
+ */
+export async function playEffect(name, { label = '' } = {}) {
   const play = PLAYERS[name];
   if (!play || reduced()) return;
   try {
@@ -821,5 +1236,5 @@ export async function playEffect(name) {
   } catch {
     /* the arcade font is optional */
   }
-  await play();
+  await play({ label });
 }

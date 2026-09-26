@@ -198,6 +198,8 @@ export const DEFAULTS = {
   hallEntrance: { x: 10, y: 97 },
   // The couple's quiz ({ enabled, title, intro, questions: [{ emoji, text, options, answer, fact }] }).
   quiz: null,
+  // When the couple froze the leaderboard (at the bouquet toss): the podium wins the prizes.
+  quizClosedAt: null,
   iconVersion: 0,
   customIcon: false,
   adminEmail: '',
@@ -217,7 +219,7 @@ export const DEFAULTS = {
   seededAt: null,
 };
 
-const PRIVATE_KEYS = new Set(['email', 'vapid', 'secret', 'adminEmail', 'revealAnnounced', 'publicUrl', 'seededAt', 'quiz']);
+const PRIVATE_KEYS = new Set(['email', 'vapid', 'secret', 'adminEmail', 'revealAnnounced', 'publicUrl', 'seededAt', 'quiz', 'quizClosedAt']);
 
 const upsertSetting = db.prepare(
   'INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
@@ -254,16 +256,14 @@ export function publicSettings() {
   const s = getSettings();
   const out = {};
   for (const key of Object.keys(s)) if (!PRIVATE_KEYS.has(key)) out[key] = s[key];
-  out.quiz = quizSummary(s.quiz);
+  out.quiz = quizSummary(s.quiz, s.quizClosedAt);
   return out;
 }
 
 /** What every client may see of the quiz: no questions, no answers. */
-export function quizSummary(quiz) {
+export function quizSummary(quiz, closedAt = null) {
   if (!quiz?.enabled || !quiz.questions?.length) return null;
-  const prizes = quiz.prizes || 0;
-  const won = prizes ? db.prepare("SELECT COUNT(*) AS n FROM guests WHERE trophy = 'shiny'").get().n : 0;
-  return { title: quiz.title, intro: quiz.intro, count: quiz.questions.length, prizes, prizesLeft: Math.max(0, prizes - won) };
+  return { title: quiz.title, intro: quiz.intro, count: quiz.questions.length, prizes: quiz.prizes || 0, closed: !!closedAt };
 }
 
 if (!getSettings().secret) setSettings({ secret: crypto.randomBytes(32).toString('hex') });

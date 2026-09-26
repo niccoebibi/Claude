@@ -1,6 +1,8 @@
 // "Il gioco degli sposi": a quiz about the couple in every guest's profile.
-// Everyone who finishes gets a trophy; answering everything right earns the shiny one,
-// and the first few to do so (quiz.prizes) win a prize from the couple.
+// Everyone who finishes gets a trophy; answering everything right earns the shiny one.
+// The leaderboard ranks by right answers, then by who finished first: the top few
+// (quiz.prizes) win a prize if nobody overtakes them before the couple closes it
+// at the bouquet toss.
 // The right answers never leave the server, so guests cannot pass them around:
 // a guest only learns whether each of their own answers was right.
 import fs from 'node:fs';
@@ -10,7 +12,7 @@ import { db, q, getSettings, setSettings, cleanText } from './db.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Special celebrations a right answer can trigger (public/js/effects.js).
-const EFFECTS = ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi'];
+const EFFECTS = ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi', 'viaggio', 'macellaio', 'trattore'];
 
 export function sanitizeQuiz(v) {
   if (!v || typeof v !== 'object') return null;
@@ -30,6 +32,8 @@ export function sanitizeQuiz(v) {
         answer: Math.max(0, answer),
         fact: cleanText(item?.fact, 400),
         effect: EFFECTS.includes(item?.effect) ? item.effect : '',
+        // Words shown inside the effect (a name on an apron, a banner): kept with the questions.
+        effectLabel: cleanText(item?.effectLabel, 24),
       };
     })
     .filter((item) => item.text && item.options.length >= 2);
@@ -42,12 +46,20 @@ export function sanitizeQuiz(v) {
   };
 }
 
-/** Guests with the shiny trophy, first to finish first: the first `prizes` of them win. */
-const championRows = () =>
-  db.prepare("SELECT id, name, quiz_done_at FROM guests WHERE trophy = 'shiny' ORDER BY quiz_done_at, id LIMIT 50").all();
+/** The leaderboard: most right answers first, then who finished first. Frozen once closed. */
+export function ranking() {
+  const closedAt = getSettings().quizClosedAt;
+  return db
+    .prepare(
+      `SELECT id, name, quiz_score AS score, quiz_done_at AS at, trophy FROM guests
+       WHERE quiz_done_at IS NOT NULL ${closedAt ? 'AND quiz_done_at <= ?' : ''}
+       ORDER BY quiz_score DESC, quiz_done_at, id`,
+    )
+    .all(...(closedAt ? [closedAt] : []));
+}
 
 const placeOf = (g) => {
-  const i = championRows().findIndex((r) => r.id === g.id);
+  const i = ranking().findIndex((r) => r.id === g.id);
   return i < 0 ? null : i + 1;
 };
 
@@ -91,7 +103,7 @@ export function quizMe(g) {
   const quiz = getSettings().quiz;
   const total = quiz?.questions?.length || 0;
   const answered = g.quiz_done_at ? total : answersOf(g, total).filter((a) => a !== null).length;
-  return { answered, score: g.quiz_score ?? 0, done: !!g.quiz_done_at, place: g.trophy === 'shiny' ? placeOf(g) : null };
+  return { answered, score: g.quiz_score ?? 0, done: !!g.quiz_done_at, place: g.quiz_done_at ? placeOf(g) : null };
 }
 
 export function registerQuizRoutes(app, { meJson }) {
@@ -110,11 +122,13 @@ export function registerQuizRoutes(app, { meJson }) {
       title: quiz.title,
       intro: quiz.intro,
       prizes: quiz.prizes || 0,
+      closed: !!getSettings().quizClosedAt,
       questions: quiz.questions.map((item, i) => ({
         emoji: item.emoji,
         text: item.text,
         options: item.options,
         effect: item.effect || '',
+        effectLabel: item.effectLabel || '',
         ...(answers[i] !== null
           ? { chosen: answers[i], correct: answers[i] === item.answer, fact: answers[i] === item.answer ? item.fact : '' }
           : {}),
@@ -122,8 +136,10 @@ export function registerQuizRoutes(app, { meJson }) {
       score: g.quiz_score ?? 0,
       done: !!g.quiz_done_at,
       trophy: g.trophy || null,
-      place: g.trophy === 'shiny' ? placeOf(g) : null,
-      champions: championRows().map((r) => r.name),
+      place: g.quiz_done_at ? placeOf(g) : null,
+      leaderboard: ranking()
+        .slice(0, 10)
+        .map((r) => ({ name: r.name, score: r.score, shiny: r.trophy === 'shiny', me: r.id === g.id })),
       players: db.prepare('SELECT COUNT(*) AS n FROM guests WHERE quiz_done_at IS NOT NULL').get().n,
     });
   });
@@ -162,7 +178,7 @@ export function registerQuizRoutes(app, { meJson }) {
       score,
       done,
       trophy,
-      place: trophy === 'shiny' ? placeOf(g) : null,
+      place: done ? placeOf(g) : null,
       me: meJson(q.guestById.get(g.id)),
     });
   });
@@ -175,13 +191,20 @@ export function quizStats() {
     finished: n('SELECT COUNT(*) AS n FROM guests WHERE quiz_done_at IS NOT NULL'),
     shiny: n("SELECT COUNT(*) AS n FROM guests WHERE trophy = 'shiny'"),
     prizes: getSettings().quiz?.prizes || 0,
-    // Who to hand the prizes to, in order.
-    winners: championRows()
+    closedAt: getSettings().quizClosedAt,
+    // Who to hand the prizes to, in order (final once the leaderboard is closed).
+    winners: ranking()
       .slice(0, getSettings().quiz?.prizes || 0)
-      .map((r) => ({ name: r.name, at: r.quiz_done_at })),
+      .map((r) => ({ name: r.name, score: r.score, at: r.at })),
   };
 }
 
 export function resetQuizResults() {
   db.prepare('UPDATE guests SET quiz_answers = NULL, quiz_score = NULL, quiz_done_at = NULL, trophy = NULL').run();
+  setSettings({ quizClosedAt: null });
+}
+
+/** The bouquet toss: freeze (or reopen) the leaderboard. */
+export function closeQuiz(closed) {
+  setSettings({ quizClosedAt: closed ? Date.now() : null });
 }

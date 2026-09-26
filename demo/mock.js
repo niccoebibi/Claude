@@ -90,11 +90,11 @@
   // Some guests have already played the couple's quiz in the preview.
   const QUIZ_TOTAL = INITIAL.settings.quiz?.questions?.length || 0;
   function sampleQuiz(i) {
-    // One perfect score so far: two of the three prizes are still up for grabs.
+    // A leaderboard with a bit of everything, and one perfect score.
     const played = QUIZ_TOTAL && i > 1 && (i % 7 === 1 || i === 19);
     if (!played) return { quizAnswers: null, quizScore: null, quizDoneAt: null, trophy: null };
     const shiny = i === 19;
-    const score = shiny ? QUIZ_TOTAL : Math.max(3, QUIZ_TOTAL - 1 - (i % 7));
+    const score = shiny ? QUIZ_TOTAL : Math.max(5, QUIZ_TOTAL - 2 - ((i * 7) % 9));
     return { quizAnswers: [], quizScore: score, quizDoneAt: Date.now() - (200 - i) * 600000, trophy: shiny ? 'shiny' : 'classic' };
   }
 
@@ -233,15 +233,14 @@
 
   const quizOf = () => (S().quiz?.enabled && S().quiz.questions?.length ? S().quiz : null);
   function publicSettings() {
-    const { email, adminEmail, revealAnnounced, quiz, ...rest } = S(); // eslint-disable-line no-unused-vars
+    const { email, adminEmail, revealAnnounced, quiz, quizClosedAt, ...rest } = S(); // eslint-disable-line no-unused-vars
     const qz = quizOf();
-    const prizes = qz?.prizes || 0;
     const summary = qz && {
       title: qz.title,
       intro: qz.intro,
       count: qz.questions.length,
-      prizes,
-      prizesLeft: Math.max(0, prizes - champions().length),
+      prizes: qz.prizes || 0,
+      closed: !!quizClosedAt,
     };
     return { ...structuredClone(rest), quiz: summary || null };
   }
@@ -250,8 +249,12 @@
     s.email = { ...s.email, pass: '', hasPass: !!S().email.pass };
     return s;
   }
-  const champions = () => store.guests.filter((x) => x.trophy === 'shiny').sort((a, b) => a.quizDoneAt - b.quizDoneAt);
-  const placeOf = (g) => (g.trophy === 'shiny' ? champions().indexOf(g) + 1 : null);
+  // Most right answers first, then who finished first; frozen at the bouquet toss.
+  const ranking = () =>
+    store.guests
+      .filter((x) => x.quizDoneAt && (!S().quizClosedAt || x.quizDoneAt <= S().quizClosedAt))
+      .sort((a, b) => b.quizScore - a.quizScore || a.quizDoneAt - b.quizDoneAt);
+  const placeOf = (g) => (g.quizDoneAt ? ranking().indexOf(g) + 1 || null : null);
   function quizMe(g) {
     const total = quizOf()?.questions.length || 0;
     const answered = g.quizDoneAt ? total : (g.quizAnswers || []).filter((a) => a !== null && a !== undefined).length;
@@ -285,7 +288,8 @@
           options: kept.map((o) => o.text),
           answer: Math.max(0, kept.findIndex((o) => o.i === Number(item.answer))),
           fact: String(item.fact || '').trim(),
-          effect: ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi'].includes(item.effect) ? item.effect : '',
+          effect: ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi', 'viaggio', 'macellaio', 'trattore'].includes(item.effect) ? item.effect : '',
+          effectLabel: String(item.effectLabel || '').trim().slice(0, 24),
         };
       })
       .filter((item) => item.text && item.options.length >= 2);
@@ -304,9 +308,10 @@
       finished: gs.filter((g) => g.quizDoneAt).length,
       shiny: gs.filter((g) => g.trophy === 'shiny').length,
       prizes: quizOf()?.prizes || 0,
-      winners: champions()
+      closedAt: S().quizClosedAt || null,
+      winners: ranking()
         .slice(0, quizOf()?.prizes || 0)
-        .map((g) => ({ name: g.name, at: g.quizDoneAt })),
+        .map((g) => ({ name: g.name, score: g.quizScore, at: g.quizDoneAt })),
     };
   }
 
@@ -763,12 +768,14 @@
         title: qz.title,
         intro: qz.intro,
         prizes: qz.prizes || 0,
+        closed: !!S().quizClosedAt,
         place: placeOf(g),
         questions: qz.questions.map((item, i) => ({
           emoji: item.emoji,
           text: item.text,
           options: item.options,
           effect: item.effect || '',
+          effectLabel: item.effectLabel || '',
           ...(Number.isInteger(answers[i])
             ? { chosen: answers[i], correct: answers[i] === item.answer, fact: answers[i] === item.answer ? item.fact : '' }
             : {}),
@@ -776,7 +783,9 @@
         score: g.quizScore ?? 0,
         done: !!g.quizDoneAt,
         trophy: g.trophy || null,
-        champions: champions().map((x) => x.name),
+        leaderboard: ranking()
+          .slice(0, 10)
+          .map((x) => ({ name: x.name, score: x.quizScore, shiny: x.trophy === 'shiny', me: x.id === g.id })),
         players: store.guests.filter((x) => x.quizDoneAt).length,
       };
     }],
@@ -819,7 +828,15 @@
     })],
     ['POST', /^\/api\/admin\/quiz\/reset$/, () => {
       store.guests.forEach((g) => Object.assign(g, { quizAnswers: null, quizScore: null, quizDoneAt: null, trophy: null }));
+      S().quizClosedAt = null;
       save();
+      broadcast('settings', publicSettings());
+      return { quiz: quizStats() };
+    }],
+    ['POST', /^\/api\/admin\/quiz\/close$/, (b) => {
+      S().quizClosedAt = b.closed ? Date.now() : null;
+      save();
+      broadcast('settings', publicSettings());
       return { quiz: quizStats() };
     }],
 

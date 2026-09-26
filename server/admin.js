@@ -26,7 +26,7 @@ import * as mail from './mail.js';
 import * as worker from './worker.js';
 import { ACCENTS } from './theme.js';
 import { tableShape, tableSeats, createTables, arrangeTables } from './tables.js';
-import { sanitizeQuiz, onQuizSaved, quizStats, resetQuizResults } from './quiz.js';
+import { sanitizeQuiz, onQuizSaved, quizStats, resetQuizResults, closeQuiz } from './quiz.js';
 import { adminPassword, setAdminCookie, limiter, upload, saveImage, removeUpload, imageExt } from './app.js';
 
 function safeEqual(a, b) {
@@ -242,6 +242,13 @@ export function adminRouter(app) {
 
   r.post('/quiz/reset', (req, res) => {
     resetQuizResults();
+    hub.broadcast('settings', publicSettings());
+    res.json({ quiz: quizStats() });
+  });
+
+  r.post('/quiz/close', (req, res) => {
+    closeQuiz(!!req.body?.closed);
+    hub.broadcast('settings', publicSettings());
     res.json({ quiz: quizStats() });
   });
 

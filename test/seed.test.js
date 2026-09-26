@@ -82,7 +82,7 @@ test('a fresh installation starts with the couple\'s content, tables and picture
   assert.equal(s.sections[1].image, '', 'a picture that could not be downloaded is dropped');
   assert.equal((await fetch(`${BASE}/uploads/copertina.jpg`)).status, 200);
   assert.equal(s.email, undefined);
-  assert.deepEqual(s.quiz, { title: 'Quanto ci conosci?', intro: '', count: 1, prizes: 0, prizesLeft: 0 }, 'quiz loaded from its own file');
+  assert.deepEqual(s.quiz, { title: 'Quanto ci conosci?', intro: '', count: 1, prizes: 0, closed: false }, 'quiz loaded from its own file');
 
   const cookie = await adminCookie();
   const tables = (await (await fetch(`${BASE}/api/admin/tables`, { headers: { cookie } })).json()).tables;

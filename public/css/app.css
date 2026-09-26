@@ -3768,3 +3768,103 @@ body.screen-mode .tabbar {
   opacity: 1;
   transform: scale(1);
 }
+
+/* Quiz leaderboard */
+.qh-place {
+  font-weight: 700;
+  color: var(--accent);
+}
+.qh-won span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.podium li.me {
+  margin: 0 -8px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+.pd-score {
+  flex: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+/* Butcher, tractor, trip */
+.fx-butcher,
+.fx-tractor,
+.fx-trip {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.fx-butcher.on,
+.fx-tractor.on,
+.fx-trip.on {
+  opacity: 1;
+}
+.fx-chop {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  top: 14%;
+  text-align: center;
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+  font-size: clamp(28px, 10vw, 52px);
+  color: #ffd23f;
+  text-shadow:
+    4px 4px 0 #b8322f,
+    8px 8px 0 rgba(0, 0, 0, 0.25);
+  opacity: 0;
+}
+.fx-chop.go {
+  animation: chop-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.5);
+}
+@keyframes chop-pop {
+  0% {
+    opacity: 1;
+    transform: scale(0.4) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1) rotate(3deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1) rotate(0);
+  }
+}
+.fx-mission {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22%;
+  text-align: center;
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+  font-size: clamp(22px, 8vw, 44px);
+  line-height: 1.4;
+  color: #ffcf33;
+  -webkit-text-stroke: 2px #6b2a00;
+  text-shadow:
+    4px 4px 0 #c0392b,
+    0 0 18px rgba(255, 207, 51, 0.5);
+  animation: mission 3.6s steps(1) both;
+}
+@keyframes mission {
+  0%,
+  12% {
+    opacity: 0;
+  }
+  13%,
+  80% {
+    opacity: 1;
+  }
+  81%,
+  100% {
+    opacity: 0;
+  }
+}
