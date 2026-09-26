@@ -740,18 +740,24 @@ function sectionHTML(sec) {
     </section>`;
 }
 
+// The countdown to the reveal lives only in the Tavolo tab; home just points there once it's out.
 function seatingTeaserHTML() {
+  if (!S.revealed || !S.me?.hasTable) return '';
+  return `<a class="card teaser" href="#tavolo"><div class="teaser-ic">${icon('table')}</div>
+    <div><b>Il tuo tavolo è pronto!</b><div class="muted small">Tocca per scoprire dove siederai</div></div>${icon('right')}</a>`;
+}
+
+const dayKey = (t, tz) => new Intl.DateTimeFormat('en-CA', { timeZone: tz || 'Europe/Rome' }).format(new Date(t));
+
+/** Slim strip telling guests when the Chat LIVE opens, until the couple opens it. */
+function liveSoonHTML() {
   const s = S.settings;
-  if (S.revealed && S.me?.hasTable) {
-    return `<a class="card teaser" href="#tavolo"><div class="teaser-ic">${icon('table')}</div>
-      <div><b>Il tuo tavolo è pronto!</b><div class="muted small">Tocca per scoprire dove siederai</div></div>${icon('right')}</a>`;
-  }
-  if (s.revealAt && !S.revealed) {
-    return `<a class="card teaser reveal" href="#tavolo">
-      <div class="teaser-top"><div class="teaser-ic">${icon('gift')}</div><div><b>Il tuo tavolo sarà svelato tra</b></div></div>
-      <div class="countdown small" data-countdown="${esc(s.revealAt)}" data-kind="reveal"></div></a>`;
-  }
-  return '';
+  if (s.mode === 'live') return '';
+  const today = dayKey(Date.now(), s.tz);
+  const day = s.weddingDate ? dayKey(s.weddingDate, s.tz) : null;
+  if (day && today > day) return '';
+  const when = today === day ? 'aprirà a breve' : 'aprirà il giorno del matrimonio';
+  return `<div class="live-soon">${icon('chat')}<span>La <b>Chat LIVE</b> ${when}</span></div>`;
 }
 
 async function viewHome(main) {
@@ -760,7 +766,7 @@ async function viewHome(main) {
   main.innerHTML = `
     ${heroHTML()}
     <div class="container">
-      ${s.mode === 'live' ? `<a class="card live-cta" href="#bacheca"><span class="live-dot"></span><div><b>La chat LIVE è aperta!</b><div class="small">Condividi foto e messaggi con tutti</div></div>${icon('right')}</a>` : ''}
+      ${s.mode === 'live' ? `<a class="card live-cta" href="#bacheca"><span class="live-dot"></span><div><b>La chat LIVE è aperta!</b><div class="small">Condividi foto e messaggi con tutti</div></div>${icon('right')}</a>` : liveSoonHTML()}
       ${ann ? `<section class="card announce-card">${icon('megaphone')}<div>${ann.title ? `<b>${esc(ann.title)}</b>` : ''}<p>${richText(ann.text)}</p></div></section>` : ''}
       ${seatingTeaserHTML()}
       ${s.welcomeTitle || s.welcomeText ? `<section class="card welcome"><h2 class="script">${esc(s.welcomeTitle)}</h2><p>${richText(s.welcomeText)}</p></section>` : ''}

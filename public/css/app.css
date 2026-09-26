@@ -752,20 +752,6 @@ input[type='checkbox'] {
   align-items: center;
   gap: 14px;
 }
-.teaser.reveal {
-  display: block;
-  text-align: center;
-  background: linear-gradient(135deg, var(--accent-soft), #fff);
-}
-.teaser-top {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.teaser.reveal .countdown.small {
-  justify-content: center;
-}
 .teaser > div:nth-child(2) {
   flex: 1;
 }
@@ -791,6 +777,27 @@ input[type='checkbox'] {
 }
 .live-cta .live-dot {
   background: #fff;
+}
+.live-soon {
+  margin-bottom: 14px;
+  padding: 11px 18px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  text-align: center;
+  text-wrap: balance;
+}
+.live-soon .ic {
+  width: 17px;
+  height: 17px;
+  margin-right: 7px;
+  vertical-align: -3px;
+}
+.live-soon b {
+  font-weight: 600;
 }
 .announce-card {
   display: flex;
