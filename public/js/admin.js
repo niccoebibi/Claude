@@ -21,6 +21,7 @@ import {
   LINE_ICONS,
   cardIcon,
   confetti,
+  unlockAudio,
 } from './util.js';
 
 let ctx; // helpers from app.js (state, router, shared views)
@@ -1268,7 +1269,15 @@ async function adminContent(main) {
 
 const QUIZ_OPTIONS = 4;
 // Same list as EFFECTS in effects.js, which is loaded only when an effect plays.
-const QUIZ_EFFECTS = { drago: '🐉 Drago sputafuoco', anelli: "💍 Pioggia di anelli d'oro", ballo: "🕺 Ballerino anni '80" };
+const QUIZ_EFFECTS = {
+  drago: '🐉 Drago sputafuoco',
+  anelli: "💍 Pioggia di anelli d'oro",
+  ballo: "🕺 Ballerino anni '80",
+  mare: '🏖️ Bamboletta al mare',
+  borsa: '🔔 Campana della borsa',
+  fulmine: '⚡ Fulmini ad alta tensione',
+  brindisi: '🥂 Brindisi',
+};
 
 function questionEditor(item, i, n) {
   const options = [...item.options];
@@ -1396,6 +1405,7 @@ async function adminQuiz(main) {
     if (btn.matches('[data-try]')) {
       const effect = $('[data-f=effect]', btn.closest('[data-i]')).value;
       if (!effect) return confetti({ count: 90 });
+      unlockAudio();
       return import('./effects.js').then((m) => m.playEffect(effect));
     }
     questions = read();

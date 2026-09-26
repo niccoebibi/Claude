@@ -1,7 +1,8 @@
 // "Il gioco degli sposi": a quiz about the couple in every guest's profile.
 // Everyone who finishes gets a trophy; answering everything right earns the shiny one,
 // and the first few to do so (quiz.prizes) win a prize from the couple.
-// Correct answers never leave the server until the guest has answered that question.
+// The right answers never leave the server, so guests cannot pass them around:
+// a guest only learns whether each of their own answers was right.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,7 +10,7 @@ import { db, q, getSettings, setSettings, cleanText } from './db.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Special celebrations a right answer can trigger (public/js/effects.js).
-const EFFECTS = ['drago', 'anelli', 'ballo'];
+const EFFECTS = ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi'];
 
 export function sanitizeQuiz(v) {
   if (!v || typeof v !== 'object') return null;
@@ -114,7 +115,9 @@ export function registerQuizRoutes(app, { meJson }) {
         text: item.text,
         options: item.options,
         effect: item.effect || '',
-        ...(answers[i] !== null ? { chosen: answers[i], answer: item.answer, fact: item.fact } : {}),
+        ...(answers[i] !== null
+          ? { chosen: answers[i], correct: answers[i] === item.answer, fact: answers[i] === item.answer ? item.fact : '' }
+          : {}),
       })),
       score: g.quiz_score ?? 0,
       done: !!g.quiz_done_at,
@@ -154,8 +157,8 @@ export function registerQuizRoutes(app, { meJson }) {
     );
     res.json({
       correct: choice === item.answer,
-      answer: item.answer,
-      fact: item.fact,
+      // The curiosity often gives the answer away: only for who got it right.
+      fact: choice === item.answer ? item.fact : '',
       score,
       done,
       trophy,

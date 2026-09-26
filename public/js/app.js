@@ -23,6 +23,7 @@ import {
   cardIcon,
   trophySVG,
   confetti,
+  unlockAudio,
 } from './util.js';
 
 /* ================================================================== */
@@ -812,9 +813,9 @@ async function viewHome(main) {
       ${s.mode === 'live' ? `<a class="card live-cta" href="#bacheca"><span class="live-dot"></span><div><b>La chat LIVE è aperta!</b><div class="small">Condividi foto e messaggi con tutti</div></div>${icon('right')}</a>` : liveSoonHTML()}
       ${ann ? `<section class="card announce-card">${icon('megaphone')}<div>${ann.title ? `<b>${esc(ann.title)}</b>` : ''}<p>${richText(ann.text)}</p></div></section>` : ''}
       ${seatingTeaserHTML()}
-      ${quizHomeHTML()}
       ${s.welcomeTitle || s.welcomeText ? `<section class="card welcome"><h2 class="script">${esc(s.welcomeTitle)}</h2><p>${richText(s.welcomeText)}</p></section>` : ''}
       ${(s.sections || []).map(sectionHTML).join('')}
+      ${quizHomeHTML()}
       <div id="home-push"></div>
       <p class="foot">Con amore, ${esc(s.coupleNames)} ♥</p>
     </div>`;
@@ -1654,7 +1655,7 @@ async function viewQuiz(main) {
   }
   const total = data.questions.length;
   const nextIndex = () => data.questions.findIndex((item) => item.chosen === undefined);
-  let misses = data.questions.filter((item) => item.chosen !== undefined && item.chosen !== item.answer).length;
+  let misses = data.questions.filter((item) => item.correct === false).length;
 
   const showIntro = () => {
     main.innerHTML = `<div class="container quiz">${top()}
@@ -1699,6 +1700,7 @@ async function viewQuiz(main) {
       if (!btn || busy) return;
       busy = true;
       const choice = Number(btn.dataset.k);
+      if (item.effect === 'borsa') unlockAudio(); // the bell rings after the server answers
       btn.classList.add('picked');
       opts.forEach((b) => (b.disabled = true));
       let r;
@@ -1711,18 +1713,18 @@ async function viewQuiz(main) {
         const n = nextIndex();
         return data.done || n < 0 ? showResult(false) : showQuestion(n);
       }
-      Object.assign(item, { chosen: choice, answer: r.answer, fact: r.fact });
+      Object.assign(item, { chosen: choice, correct: r.correct, fact: r.fact });
       Object.assign(data, { score: r.score, done: r.done, trophy: r.trophy, place: r.place });
       S.me = r.me;
-      opts[r.answer].classList.add('right');
-      if (!r.correct) btn.classList.add('wrong');
+      // Only whether it was right: the right answer stays a secret, so nobody can pass it on.
+      btn.classList.add(r.correct ? 'right' : 'wrong');
       $('.quiz-bar i', main).style.width = `${((i + 1) / total) * 100}%`;
       const fb = $('.quiz-feedback', main);
       fb.className = `quiz-feedback show ${r.correct ? 'ok' : 'ko'}`;
       fb.innerHTML = r.correct
         ? `<b>${RIGHT_WORDS[i % RIGHT_WORDS.length]}</b>${r.fact ? `<p>${esc(r.fact)}</p>` : ''}`
         : `<b>${COMFORT_WORDS[misses++ % COMFORT_WORDS.length]}</b>
-           <p>La risposta giusta era <b>«${esc(item.options[r.answer])}»</b>.</p>${r.fact ? `<p>${esc(r.fact)}</p>` : ''}`;
+           <p>La risposta giusta? Resta un segreto 🤫</p>`;
       if (r.correct && item.effect) {
         import('./effects.js').then((m) => m.playEffect(item.effect)).catch(() => {});
       } else if (r.correct) {
@@ -1777,12 +1779,13 @@ async function viewQuiz(main) {
       </section>
       <section class="card review">
         <h3 class="card-title small-title">Le tue risposte</h3>
+        <p class="small muted">Quelle giuste restano un segreto: niente spoiler agli altri invitati 🤫</p>
         <ol class="review-list">${data.questions
           .map((item) => {
-            const ok = item.chosen === item.answer;
+            const ok = item.correct;
             return `<li class="${ok ? 'ok' : 'ko'}"><span class="rv-emoji" aria-hidden="true">${esc(item.emoji || '❓')}</span>
               <div><b>${esc(item.text)}</b>
-              <div class="rv-answer">${ok ? `✓ ${esc(item.options[item.answer])}` : `✗ ${esc(item.options[item.chosen] ?? '')} <span class="muted">→</span> ${esc(item.options[item.answer])}`}</div></div></li>`;
+              <div class="rv-answer">${ok ? '✓' : '✗'} ${esc(item.options[item.chosen] ?? '')}</div></div></li>`;
           })
           .join('')}</ol>
       </section>

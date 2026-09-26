@@ -3525,3 +3525,246 @@ body.screen-mode .tabbar {
   color: #7df9ff;
   text-shadow: 3px 3px 0 #2a2aff;
 }
+
+/* At the sea */
+.fx-beach {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.fx-beach.on {
+  opacity: 1;
+}
+.fx-bubble {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  max-width: 88vw;
+  transform: translateX(-50%) scale(0.4);
+  opacity: 0;
+  padding: 14px 16px;
+  background: #fff;
+  color: #1a1a1a;
+  border: 4px solid #1a1a1a;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.25);
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+  font-size: clamp(11px, 3.6vw, 16px);
+  line-height: 1.6;
+  white-space: nowrap;
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.4),
+    opacity 0.15s;
+}
+.fx-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -16px;
+  border: 8px solid transparent;
+  border-top: 8px solid #1a1a1a;
+  transform: translateX(-50%);
+}
+.fx-bubble.on {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* Stock exchange */
+.fx-market {
+  background: radial-gradient(circle at 50% 30%, #0b2a55, #04162e 70%);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.fx-market.on {
+  opacity: 1;
+}
+.fx-market-head {
+  position: absolute;
+  z-index: 2;
+  top: 7%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+}
+.fx-market-head small {
+  display: block;
+  font-size: clamp(10px, 3vw, 14px);
+  letter-spacing: 0.12em;
+  color: #7df9ff;
+}
+.fx-bell {
+  font-size: clamp(56px, 18vw, 96px);
+  line-height: 1.2;
+  transform-origin: 50% 8%;
+  animation: bell-swing 0.5s ease-in-out infinite alternate;
+}
+@keyframes bell-swing {
+  from {
+    transform: rotate(-18deg);
+  }
+  to {
+    transform: rotate(18deg);
+  }
+}
+.fx-dong {
+  display: inline-block;
+  font-size: clamp(34px, 11vw, 64px);
+  color: #ffd23f;
+  text-shadow:
+    4px 4px 0 #ff2e88,
+    0 0 24px rgba(255, 210, 63, 0.6);
+  transform: scale(0.8);
+  transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.6);
+}
+.fx-market.dong .fx-dong {
+  transform: scale(1.18);
+}
+.fx-quote {
+  margin-top: 14px;
+  font-size: clamp(14px, 4.6vw, 22px);
+}
+.fx-quote i {
+  font-style: normal;
+  color: #1fd17a;
+}
+.fx-ticker {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--tabbar-h) + 12px);
+  overflow: hidden;
+  padding: 10px 0;
+  background: #000;
+  border-top: 2px solid #1fd17a;
+  border-bottom: 2px solid #1fd17a;
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+  font-size: 12px;
+  color: #1fd17a;
+  white-space: nowrap;
+}
+.fx-ticker span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: ticker 6s linear infinite;
+}
+@keyframes ticker {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* High voltage */
+.fx-storm {
+  background: rgba(6, 10, 30, 0.88);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.fx-storm.on {
+  opacity: 1;
+}
+.fx-flash {
+  position: absolute;
+  inset: 0;
+  background: #e8f4ff;
+  opacity: 0;
+}
+.fx-flash.go {
+  animation: flash 0.35s ease-out;
+}
+@keyframes flash {
+  from {
+    opacity: 0.85;
+  }
+}
+.fx-volt {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  top: 56%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+  color: #fff;
+  text-align: center;
+}
+.fx-volt b {
+  font-weight: 400;
+  font-size: clamp(14px, 4.8vw, 24px);
+  color: #ffe45c;
+  text-shadow: 0 0 14px #7ec8ff;
+}
+.fx-volt small {
+  font-size: clamp(11px, 3.4vw, 15px);
+  color: #7df9ff;
+  opacity: 0;
+}
+.fx-battery {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  border: 4px solid #fff;
+}
+.fx-battery::after {
+  content: '';
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  width: 8px;
+  height: 16px;
+  background: #fff;
+  transform: translateY(-50%);
+}
+.fx-battery i {
+  width: 18px;
+  height: 30px;
+  background: #1fd17a;
+  opacity: 0.12;
+}
+.fx-battery i.lit {
+  animation: cell-on 0.15s steps(1) both;
+}
+@keyframes cell-on {
+  to {
+    opacity: 1;
+  }
+}
+.fx-storm.charged .fx-volt small {
+  animation: cell-on 0.1s steps(1) both;
+}
+
+/* Cheers */
+.fx-cheers {
+  background: radial-gradient(circle at 50% 42%, rgba(255, 214, 226, 0.95), rgba(255, 240, 230, 0.9) 60%, rgba(255, 250, 244, 0.85));
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.fx-cheers.on {
+  opacity: 1;
+}
+.fx-cincin {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  top: 64%;
+  text-align: center;
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+  font-size: clamp(26px, 9vw, 48px);
+  color: #ff5a8a;
+  text-shadow: 4px 4px 0 #7a1b3a;
+  opacity: 0;
+  transform: scale(0.3);
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.6),
+    opacity 0.1s;
+}
+.fx-cheers.clink .fx-cincin {
+  opacity: 1;
+  transform: scale(1);
+}

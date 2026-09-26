@@ -285,7 +285,7 @@
           options: kept.map((o) => o.text),
           answer: Math.max(0, kept.findIndex((o) => o.i === Number(item.answer))),
           fact: String(item.fact || '').trim(),
-          effect: ['drago', 'anelli', 'ballo'].includes(item.effect) ? item.effect : '',
+          effect: ['drago', 'anelli', 'ballo', 'mare', 'borsa', 'fulmine', 'brindisi'].includes(item.effect) ? item.effect : '',
         };
       })
       .filter((item) => item.text && item.options.length >= 2);
@@ -769,7 +769,9 @@
           text: item.text,
           options: item.options,
           effect: item.effect || '',
-          ...(Number.isInteger(answers[i]) ? { chosen: answers[i], answer: item.answer, fact: item.fact } : {}),
+          ...(Number.isInteger(answers[i])
+            ? { chosen: answers[i], correct: answers[i] === item.answer, fact: answers[i] === item.answer ? item.fact : '' }
+            : {}),
         })),
         score: g.quizScore ?? 0,
         done: !!g.quizDoneAt,
@@ -798,7 +800,8 @@
         trophy: done ? (score === qz.questions.length ? 'shiny' : 'classic') : null,
       });
       save();
-      return { correct: b.choice === item.answer, answer: item.answer, fact: item.fact, score, done, trophy: g.trophy, place: placeOf(g), me: meJson(g) };
+      const correct = b.choice === item.answer;
+      return { correct, fact: correct ? item.fact : '', score, done, trophy: g.trophy, place: placeOf(g), me: meJson(g) };
     }],
 
     ['*', /^\/api\/admin\//, () => (store.admin ? null : fail(401, 'Accesso riservato agli sposi'))],

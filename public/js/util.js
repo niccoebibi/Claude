@@ -531,3 +531,28 @@ export function confetti({ x, y, count = 70, spread = 60, power = 1, rain = fals
   requestAnimationFrame(frame);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Sound (quiz effects)                                                */
+/* ------------------------------------------------------------------ */
+
+let audioCtx = null;
+/** Shared Web Audio context, or null where sound is not available. */
+export function audio() {
+  try {
+    audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  } catch {
+    return null;
+  }
+}
+/** Call from inside a tap: iPhones only let a page make sound once the user touched it. */
+export function unlockAudio() {
+  const ctx = audio();
+  if (!ctx) return;
+  const src = ctx.createBufferSource();
+  src.buffer = ctx.createBuffer(1, 1, 22050);
+  src.connect(ctx.destination);
+  src.start(0);
+}

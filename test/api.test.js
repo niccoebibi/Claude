@@ -399,15 +399,17 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
   assert.equal(game.questions[0].answer, undefined, 'answers stay on the server');
   assert.equal(game.questions[0].effect, 'drago');
   const wrong = await mario.post('/api/quiz/answer', { index: 0, choice: 0 });
-  assert.deepEqual([wrong.data.correct, wrong.data.answer, wrong.data.fact], [false, 1, 'Era B']);
+  assert.deepEqual([wrong.data.correct, wrong.data.answer, wrong.data.fact], [false, undefined, ''], 'no spoilers');
   assert.equal((await mario.post('/api/quiz/answer', { index: 0, choice: 1 })).status, 409, 'no second chances');
   assert.equal((await mario.post('/api/quiz/answer', { index: 1, choice: 5 })).status, 400);
   const last = await mario.post('/api/quiz/answer', { index: 1, choice: 0 });
   assert.equal(last.data.trophy, 'classic', 'a trophy for everyone who finishes');
   assert.deepEqual(last.data.me.quiz, { answered: 2, score: 1, done: true, place: null });
-  assert.equal((await mario.get('/api/quiz')).data.questions[0].chosen, 0, 'answers can be reviewed');
+  const review = (await mario.get('/api/quiz')).data.questions[0];
+  assert.deepEqual([review.chosen, review.correct, review.answer], [0, false, undefined], 'own answers only, never the right one');
 
-  await anna.post('/api/quiz/answer', { index: 0, choice: 1 });
+  const right = await anna.post('/api/quiz/answer', { index: 0, choice: 1 });
+  assert.deepEqual([right.data.correct, right.data.fact], [true, 'Era B']);
   const annaDone = await anna.post('/api/quiz/answer', { index: 1, choice: 0 });
   assert.equal(annaDone.data.trophy, 'shiny');
   assert.equal(annaDone.data.place, 1, 'first with everything right: a prize');
