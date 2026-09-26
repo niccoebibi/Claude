@@ -1723,7 +1723,9 @@ async function viewQuiz(main) {
         ? `<b>${RIGHT_WORDS[i % RIGHT_WORDS.length]}</b>${r.fact ? `<p>${esc(r.fact)}</p>` : ''}`
         : `<b>${COMFORT_WORDS[misses++ % COMFORT_WORDS.length]}</b>
            <p>La risposta giusta era <b>«${esc(item.options[r.answer])}»</b>.</p>${r.fact ? `<p>${esc(r.fact)}</p>` : ''}`;
-      if (r.correct) {
+      if (r.correct && item.effect) {
+        import('./effects.js').then((m) => m.playEffect(item.effect)).catch(() => {});
+      } else if (r.correct) {
         const b = btn.getBoundingClientRect();
         confetti({ x: b.left + b.width / 2, y: b.top + b.height / 2, count: 60, spread: 55, power: 0.9 });
       }

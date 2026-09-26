@@ -1,6 +1,6 @@
 // Service worker: offline shell, push notifications.
 const CACHE = 'wedding-v1';
-const SHELL = ['/', '/css/app.css', '/js/app.js', '/js/util.js', '/js/admin.js', '/icon/icon-192.png', '/icon/badge-96.png'];
+const SHELL = ['/', '/css/app.css', '/js/app.js', '/js/util.js', '/js/admin.js', '/js/effects.js', '/icon/icon-192.png', '/icon/badge-96.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

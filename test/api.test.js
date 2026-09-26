@@ -376,8 +376,8 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
     title: 'Quanto conosci gli sposi?',
     prizes: 3,
     questions: [
-      { emoji: '🎂', text: 'Domanda uno', options: ['A', '', 'B', 'C'], answer: 2, fact: 'Era B' },
-      { text: 'Domanda due', options: ['Sì', 'No'], answer: 0 },
+      { emoji: '🎂', text: 'Domanda uno', options: ['A', '', 'B', 'C'], answer: 2, fact: 'Era B', effect: 'drago' },
+      { text: 'Domanda due', options: ['Sì', 'No'], answer: 0, effect: '<script>' },
       { text: 'Una sola opzione', options: ['solo questa'] },
     ],
   };
@@ -385,6 +385,7 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
   assert.equal(saved.questions.length, 2, 'a question needs at least two options');
   assert.deepEqual(saved.questions[0].options, ['A', 'B', 'C']);
   assert.equal(saved.questions[0].answer, 1, 'the right answer follows its option');
+  assert.deepEqual(saved.questions.map((x) => x.effect), ['drago', ''], 'only known effects');
 
   const pub = (await client().get('/api/state')).data.settings.quiz;
   assert.deepEqual(
@@ -396,6 +397,7 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
 
   const game = (await mario.get('/api/quiz')).data;
   assert.equal(game.questions[0].answer, undefined, 'answers stay on the server');
+  assert.equal(game.questions[0].effect, 'drago');
   const wrong = await mario.post('/api/quiz/answer', { index: 0, choice: 0 });
   assert.deepEqual([wrong.data.correct, wrong.data.answer, wrong.data.fact], [false, 1, 'Era B']);
   assert.equal((await mario.post('/api/quiz/answer', { index: 0, choice: 1 })).status, 409, 'no second chances');

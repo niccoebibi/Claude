@@ -20,6 +20,7 @@ import {
   ACCENTS,
   LINE_ICONS,
   cardIcon,
+  confetti,
 } from './util.js';
 
 let ctx; // helpers from app.js (state, router, shared views)
@@ -1266,6 +1267,8 @@ async function adminContent(main) {
 /* ================================================================== */
 
 const QUIZ_OPTIONS = 4;
+// Same list as EFFECTS in effects.js, which is loaded only when an effect plays.
+const QUIZ_EFFECTS = { drago: '🐉 Drago sputafuoco', anelli: "💍 Pioggia di anelli d'oro", ballo: "🕺 Ballerino anni '80" };
 
 function questionEditor(item, i, n) {
   const options = [...item.options];
@@ -1293,6 +1296,17 @@ function questionEditor(item, i, n) {
           .join('')}
       </div>
       <label class="field"><span>Curiosità mostrata dopo la risposta</span><input data-f="fact" value="${esc(item.fact)}" maxlength="400" placeholder="Es. Proprio così, non ha dubbi! 😄" /></label>
+      <div class="field"><span>Effetto speciale se indovinano</span>
+        <div class="inline-form">
+          <select data-f="effect">
+            <option value="">🎉 Coriandoli</option>
+            ${Object.entries(QUIZ_EFFECTS)
+              .map(([k, label]) => `<option value="${k}" ${item.effect === k ? 'selected' : ''}>${label}</option>`)
+              .join('')}
+          </select>
+          <button type="button" class="btn small ghost" data-try>▶ Prova</button>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -1360,6 +1374,7 @@ async function adminQuiz(main) {
       options: $$('[data-opt]', el).map((inp) => inp.value.trim()),
       answer: Number($('input[type=radio]:checked', el)?.value ?? -1),
       fact: $('[data-f=fact]', el).value.trim(),
+      effect: $('[data-f=effect]', el).value,
     }));
   const draw = () => {
     box.innerHTML = questions.length
@@ -1370,7 +1385,7 @@ async function adminQuiz(main) {
 
   $('#add-q', main).addEventListener('click', () => {
     questions = read();
-    questions.push({ emoji: '', text: '', options: [], answer: 0, fact: '' });
+    questions.push({ emoji: '', text: '', options: [], answer: 0, fact: '', effect: '' });
     draw();
     $$('[data-f=text]', box).pop().focus();
   });
@@ -1378,6 +1393,11 @@ async function adminQuiz(main) {
     const btn = e.target.closest('button');
     if (!btn) return;
     const i = Number(btn.closest('[data-i]').dataset.i);
+    if (btn.matches('[data-try]')) {
+      const effect = $('[data-f=effect]', btn.closest('[data-i]')).value;
+      if (!effect) return confetti({ count: 90 });
+      return import('./effects.js').then((m) => m.playEffect(effect));
+    }
     questions = read();
     if (btn.dataset.move) {
       const j = i + Number(btn.dataset.move);

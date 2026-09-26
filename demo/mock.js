@@ -285,6 +285,7 @@
           options: kept.map((o) => o.text),
           answer: Math.max(0, kept.findIndex((o) => o.i === Number(item.answer))),
           fact: String(item.fact || '').trim(),
+          effect: ['drago', 'anelli', 'ballo'].includes(item.effect) ? item.effect : '',
         };
       })
       .filter((item) => item.text && item.options.length >= 2);
@@ -767,6 +768,7 @@
           emoji: item.emoji,
           text: item.text,
           options: item.options,
+          effect: item.effect || '',
           ...(Number.isInteger(answers[i]) ? { chosen: answers[i], answer: item.answer, fact: item.fact } : {}),
         })),
         score: g.quizScore ?? 0,

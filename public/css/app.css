@@ -3294,3 +3294,234 @@ body.screen-mode .tabbar {
 .q-opt input:not([type]) {
   flex: 1;
 }
+
+/* ---------- Special celebrations (public/js/effects.js) ---------- */
+
+.fx {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  pointer-events: none;
+  overflow: hidden;
+}
+.fx-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.fx-arcade,
+.fx-battle {
+  font-family: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
+}
+
+/* Fire dragon */
+.fx-dragon .fx-canvas {
+  z-index: 2;
+}
+.fx-dragon-body {
+  position: absolute;
+  z-index: 1;
+  left: -3vw;
+  bottom: calc(var(--tabbar-h) + 70px);
+  width: min(66vw, 46vh, 460px);
+  animation: dragon-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.fx-dragon-body.leaving {
+  animation: dragon-out 0.6s ease-in both;
+}
+.fx-dragon-svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.35));
+}
+@keyframes dragon-in {
+  from {
+    transform: translate(-110%, 20%) rotate(-8deg);
+  }
+}
+@keyframes dragon-out {
+  to {
+    transform: translate(-120%, 10%) rotate(-6deg);
+  }
+}
+.fx-wing {
+  transform-box: view-box;
+  animation: wing-flap 0.42s ease-in-out infinite alternate;
+}
+.fx-wing.back {
+  transform-origin: 110px 110px;
+}
+.fx-wing.front {
+  transform-origin: 132px 106px;
+  animation-delay: 0.08s;
+}
+@keyframes wing-flap {
+  from {
+    transform: rotate(-7deg);
+  }
+  to {
+    transform: rotate(6deg);
+  }
+}
+.fx-tailfire {
+  transform-box: view-box;
+  transform-origin: 40px 120px;
+  animation: tail-fire 0.18s ease-in-out infinite alternate;
+}
+@keyframes tail-fire {
+  to {
+    transform: scale(1.08, 1.16) rotate(-4deg);
+  }
+}
+.fx-jaw {
+  transform-box: view-box;
+  transform-origin: 172px 82px;
+  transition: transform 0.18s ease-out;
+}
+.fx-dragon.firing .fx-jaw {
+  transform: rotate(24deg);
+}
+.fx-dragon.firing .fx-dragon-body {
+  animation: dragon-recoil 0.12s linear infinite alternate;
+}
+@keyframes dragon-recoil {
+  to {
+    transform: translateX(-4px);
+  }
+}
+.fx-heat {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 70% 40%, rgba(255, 150, 40, 0.45), rgba(255, 70, 20, 0.12) 60%, transparent 80%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.fx-dragon.firing .fx-heat {
+  opacity: 1;
+}
+.fx-battle {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: calc(var(--tabbar-h) + 14px);
+  width: min(92vw, 460px);
+  transform: translateX(-50%);
+  padding: 16px 16px 18px;
+  background: #fff;
+  color: #222;
+  border: 4px solid #333;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 6px #6a8fc0,
+    0 8px 20px rgba(0, 0, 0, 0.3);
+  font-size: clamp(10px, 3.2vw, 14px);
+  line-height: 1.7;
+  animation: fadeIn 0.2s ease 0.45s both;
+}
+.fx-battle i {
+  position: absolute;
+  right: 12px;
+  bottom: 6px;
+  font-style: normal;
+  font-size: 10px;
+  color: #d03030;
+  animation: blink 0.6s steps(1) infinite;
+}
+.fx-dragon.leaving .fx-battle {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#view.fx-shake {
+  animation: fx-shake 0.09s linear infinite alternate;
+}
+@keyframes fx-shake {
+  from {
+    transform: translate(-3px, 1px);
+  }
+  to {
+    transform: translate(3px, -2px);
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* 8-bit dancer on a neon stage */
+.fx-dance {
+  background: linear-gradient(#12002b, #3a0a5e 58%, #1a0233 58%);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.fx-dance.on {
+  opacity: 1;
+}
+.fx-dance .fx-canvas {
+  z-index: 3;
+}
+.fx-sun {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 56vmin;
+  height: 28vmin;
+  transform: translate(-50%, -100%);
+  border-radius: 28vmin 28vmin 0 0;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 55%, #3a0a5e 55% 60%, transparent 60% 68%, #3a0a5e 68% 72%, transparent 72% 80%, #3a0a5e 80% 85%),
+    linear-gradient(#ffe45c, #ff7a3d 55%, #ff2e88);
+  box-shadow: 0 0 60px rgba(255, 46, 136, 0.55);
+}
+.fx-floor {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  top: 58%;
+  bottom: -20%;
+  background-image:
+    linear-gradient(#ff2e88 2px, transparent 2px),
+    linear-gradient(90deg, #ff2e88 2px, transparent 2px);
+  background-size: 48px 48px;
+  transform: perspective(260px) rotateX(58deg);
+  transform-origin: top;
+  animation: floor-run 0.4s linear infinite;
+  opacity: 0.85;
+}
+@keyframes floor-run {
+  to {
+    background-position: 0 48px;
+  }
+}
+.fx-scan {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: repeating-linear-gradient(rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+}
+.fx-arcade {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #ffe45c;
+  text-shadow:
+    3px 3px 0 #ff2e88,
+    6px 6px 0 rgba(0, 0, 0, 0.45);
+  line-height: 1.6;
+}
+.fx-arcade.top {
+  top: 14%;
+  font-size: clamp(18px, 6.4vw, 34px);
+  animation: blink 0.5s steps(1) infinite;
+}
+.fx-arcade.bottom {
+  bottom: calc(var(--tabbar-h) + 26px);
+  font-size: clamp(12px, 3.8vw, 18px);
+  color: #7df9ff;
+  text-shadow: 3px 3px 0 #2a2aff;
+}

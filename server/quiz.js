@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { db, q, getSettings, setSettings, cleanText } from './db.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// Special celebrations a right answer can trigger (public/js/effects.js).
+const EFFECTS = ['drago', 'anelli', 'ballo'];
 
 export function sanitizeQuiz(v) {
   if (!v || typeof v !== 'object') return null;
@@ -26,6 +28,7 @@ export function sanitizeQuiz(v) {
         options: kept.map((o) => o.text),
         answer: Math.max(0, answer),
         fact: cleanText(item?.fact, 400),
+        effect: EFFECTS.includes(item?.effect) ? item.effect : '',
       };
     })
     .filter((item) => item.text && item.options.length >= 2);
@@ -110,6 +113,7 @@ export function registerQuizRoutes(app, { meJson }) {
         emoji: item.emoji,
         text: item.text,
         options: item.options,
+        effect: item.effect || '',
         ...(answers[i] !== null ? { chosen: answers[i], answer: item.answer, fact: item.fact } : {}),
       })),
       score: g.quiz_score ?? 0,

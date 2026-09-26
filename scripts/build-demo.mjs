@@ -58,6 +58,7 @@ patch('admin.js', [
   ['${esc(location.host)}', '${esc(window.__DEMO?.host || location.host)}'],
 ]);
 fs.copyFileSync(path.join(PUB, 'js', 'util.js'), path.join(OUT, 'js', 'util.js'));
+fs.copyFileSync(path.join(PUB, 'js', 'effects.js'), path.join(OUT, 'js', 'effects.js'));
 fs.copyFileSync(path.join(PUB, 'css', 'app.css'), path.join(OUT, 'css', 'app.css'));
 for (const f of fs.readdirSync(path.join(PUB, 'icons'))) {
   fs.copyFileSync(path.join(PUB, 'icons', f), path.join(OUT, 'icon', f));
@@ -77,7 +78,7 @@ fs.writeFileSync(
   `<title>App del matrimonio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=Italianno&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=Italianno&family=Press+Start+2P&display=swap" />
 <link rel="stylesheet" href="css/app.css" />
 <style>
   :root { --accent: ${ACCENTS[INITIAL.settings.accent]?.color || ACCENTS.salvia.color}; }
