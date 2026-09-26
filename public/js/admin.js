@@ -1299,7 +1299,8 @@ function questionEditor(item, i, n) {
 async function adminQuiz(main) {
   const O = await overview();
   const st = O.quiz;
-  const quiz = O.settings.quiz || { enabled: true, title: 'Quanto conosci gli sposi?', intro: '', questions: [] };
+  const quiz = O.settings.quiz || { enabled: true, title: 'Quanto conosci gli sposi?', intro: '', prizes: 3, questions: [] };
+  const medals = ['🥇', '🥈', '🥉'];
   let questions = structuredClone(quiz.questions);
 
   main.innerHTML = `
@@ -1312,11 +1313,30 @@ async function adminQuiz(main) {
         <div class="stat"><b>${st.shiny}</b><span>trofei brillanti</span></div>
         <div class="stat"><b>${st.playing}</b><span>stanno giocando</span></div>
       </section>
+      ${
+        st.prizes
+          ? `<section class="card">
+              <h3 class="card-title small-title">🎁 Chi vince i premi</h3>
+              <p class="small muted">I primi ${st.prizes} che indovinano tutte le risposte, in ordine di arrivo.</p>
+              ${
+                st.winners.length
+                  ? `<ol class="mates podium">${st.winners
+                      .map(
+                        (w, k) =>
+                          `<li><span class="medal">${medals[k] || '🏅'}</span><span class="pd-name">${esc(w.name)}</span><span class="small muted">${esc(fmtDateTime(new Date(w.at).toISOString(), tz()))}</span></li>`,
+                      )
+                      .join('')}</ol>`
+                  : '<p class="muted">Ancora nessuno ha indovinato tutto.</p>'
+              }
+            </section>`
+          : ''
+      }
       <form id="quiz-form" class="form">
         <section class="card">
           <label class="switch-row"><input type="checkbox" name="enabled" ${quiz.enabled ? 'checked' : ''}/> <span>Gioco visibile agli invitati</span></label>
           <label class="field"><span>Titolo</span><input name="title" maxlength="120" value="${esc(quiz.title)}" /></label>
           <label class="field"><span>Presentazione</span><textarea name="intro" rows="3" maxlength="600">${esc(quiz.intro)}</textarea></label>
+          <label class="field"><span>Premi per i primi che indovinano tutto (0 = nessun premio)</span><input name="prizes" type="number" min="0" max="10" inputmode="numeric" value="${Number(quiz.prizes) || 0}" /></label>
         </section>
         <h3 class="section-label">Domande</h3>
         <p class="small muted">Da due a quattro risposte per domanda: tocca il pallino accanto a quella giusta.</p>
@@ -1397,7 +1417,15 @@ async function adminQuiz(main) {
     try {
       await api('/api/admin/settings', {
         method: 'PATCH',
-        body: { quiz: { enabled: f.elements.enabled.checked, title: f.elements.title.value, intro: f.elements.intro.value, questions: list } },
+        body: {
+          quiz: {
+            enabled: f.elements.enabled.checked,
+            title: f.elements.title.value,
+            intro: f.elements.intro.value,
+            prizes: Number(f.elements.prizes.value) || 0,
+            questions: list,
+          },
+        },
       });
       await ctx.refreshState();
       toast('Gioco salvato 🏆');

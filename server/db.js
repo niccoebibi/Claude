@@ -261,7 +261,9 @@ export function publicSettings() {
 /** What every client may see of the quiz: no questions, no answers. */
 export function quizSummary(quiz) {
   if (!quiz?.enabled || !quiz.questions?.length) return null;
-  return { title: quiz.title, intro: quiz.intro, count: quiz.questions.length };
+  const prizes = quiz.prizes || 0;
+  const won = prizes ? db.prepare("SELECT COUNT(*) AS n FROM guests WHERE trophy = 'shiny'").get().n : 0;
+  return { title: quiz.title, intro: quiz.intro, count: quiz.questions.length, prizes, prizesLeft: Math.max(0, prizes - won) };
 }
 
 if (!getSettings().secret) setSettings({ secret: crypto.randomBytes(32).toString('hex') });

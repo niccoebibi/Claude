@@ -246,7 +246,8 @@ function renderShell() {
       <a class="brand" href="#home"><span class="brand-names">${esc(S.settings.coupleNames)}</span></a>
       <div class="top-actions">
         <span class="online-pill" id="online" hidden><i></i><b>0</b> online</span>
-        <a class="avatar-btn" href="#profilo" aria-label="Profilo">${avatarBtnHTML()}</a>
+        <span id="top-trophy">${topTrophyHTML()}</span>
+        <a class="avatar-btn" href="#profilo" aria-label="Profilo">${S.me ? esc(initials(S.me.name)) : icon('user')}</a>
       </div>
     </header>
     <main id="view" class="view"></main>
@@ -258,14 +259,18 @@ const trophyTitle = (kind) => (kind === 'shiny' ? 'Trofeo brillante' : 'Trofeo')
 const trophyBadge = (kind, cls = 'trophy-badge') =>
   kind ? `<span class="${cls} ${kind}" title="${trophyTitle(kind)}" role="img" aria-label="${trophyTitle(kind)}">${trophySVG(kind, { mini: true })}</span>` : '';
 
-function avatarBtnHTML() {
-  return S.me ? `${esc(initials(S.me.name))}${trophyBadge(S.me.trophy)}` : icon('user');
+/** The guest's trophy, big, beside the profile picture in the top bar. */
+function topTrophyHTML() {
+  const kind = S.me?.trophy;
+  return kind
+    ? `<a class="top-trophy ${kind}" href="#profilo/gioco" title="${trophyTitle(kind)}" aria-label="${trophyTitle(kind)}">${trophySVG(kind)}</a>`
+    : '';
 }
 
-/** Refresh the trophy next to the profile picture after a game. */
-function updateAvatarBtn() {
-  const btn = $('.avatar-btn');
-  if (btn) btn.innerHTML = avatarBtnHTML();
+/** Refresh the trophy in the top bar after a game. */
+function updateTopTrophy() {
+  const box = $('#top-trophy');
+  if (box) box.innerHTML = topTrophyHTML();
 }
 
 function navItems() {
@@ -762,15 +767,27 @@ function seatingTeaserHTML() {
     <div><b>Il tuo tavolo è pronto!</b><div class="muted small">Tocca per scoprire dove siederai</div></div>${icon('right')}</a>`;
 }
 
-/** A nudge towards the couple's quiz, until the guest has played. */
-function quizInviteHTML() {
+/** The couple's quiz on the home page: the way into the game, then the guest's trophy. */
+function quizHomeHTML() {
   const qz = S.settings.quiz;
-  if (!qz || !S.me || S.me.quiz?.done) return '';
-  const answered = S.me.quiz?.answered || 0;
-  return `<a class="card quiz-invite" href="#profilo/gioco">
-    <span class="qi-trophy">${trophySVG('shiny', { mini: true })}</span>
-    <span class="qi-text"><b>${esc(qz.title)}</b><span>${answered ? `Riprendi il gioco: sei a ${answered} su ${qz.count}` : 'Gioca e vinci un trofeo accanto al tuo nome'}</span></span>
-    ${icon('right')}</a>`;
+  if (!qz || !S.me) return '';
+  const st = S.me.quiz || {};
+  if (st.done) {
+    const won = st.place && st.place <= qz.prizes;
+    return `<section class="card quiz-home done ${S.me.trophy}">
+      <div class="qh-trophy">${trophySVG(S.me.trophy)}</div>
+      <div class="qc-label">${S.me.trophy === 'shiny' ? 'Il tuo trofeo brillante' : 'Il tuo trofeo'}</div>
+      <p>Hai indovinato <b>${st.score} su ${qz.count}</b> nel gioco degli sposi${won ? '<br><b class="qh-won">🎁 Hai vinto un premio!</b>' : ''}</p>
+      <a class="btn ghost block" href="#profilo/gioco">🏆 Rivedi il gioco</a>
+    </section>`;
+  }
+  return `<section class="card quiz-home">
+    ${prizeHTML(qz)}
+    <div class="qh-trophy">${trophySVG('shiny')}</div>
+    <h3 class="qc-title">${esc(qz.title)}</h3>
+    <p class="muted">${qz.count} domande su Niccolò e Beatrice: il trofeo lo vincono tutti</p>
+    <a class="btn primary block big" href="#profilo/gioco">🏆 ${st.answered ? `Riprendi il gioco (${st.answered}/${qz.count})` : 'Gioca ora'}</a>
+  </section>`;
 }
 
 const dayKey = (t, tz) => new Intl.DateTimeFormat('en-CA', { timeZone: tz || 'Europe/Rome' }).format(new Date(t));
@@ -795,9 +812,9 @@ async function viewHome(main) {
       ${s.mode === 'live' ? `<a class="card live-cta" href="#bacheca"><span class="live-dot"></span><div><b>La chat LIVE è aperta!</b><div class="small">Condividi foto e messaggi con tutti</div></div>${icon('right')}</a>` : liveSoonHTML()}
       ${ann ? `<section class="card announce-card">${icon('megaphone')}<div>${ann.title ? `<b>${esc(ann.title)}</b>` : ''}<p>${richText(ann.text)}</p></div></section>` : ''}
       ${seatingTeaserHTML()}
+      ${quizHomeHTML()}
       ${s.welcomeTitle || s.welcomeText ? `<section class="card welcome"><h2 class="script">${esc(s.welcomeTitle)}</h2><p>${richText(s.welcomeText)}</p></section>` : ''}
       ${(s.sections || []).map(sectionHTML).join('')}
-      ${quizInviteHTML()}
       <div id="home-push"></div>
       <p class="foot">Con amore, ${esc(s.coupleNames)} ♥</p>
     </div>`;
@@ -1567,10 +1584,12 @@ function quizCardHTML() {
       <div class="qc-label">${trophyTitle(S.me.trophy)}</div>
       <h3 class="qc-title">${shiny ? 'Conosci gli sposi alla perfezione!' : 'Il trofeo è tuo!'}</h3>
       <p class="muted">Hai indovinato <b>${st.score} su ${qz.count}</b> nel gioco «${esc(qz.title)}».</p>
+      ${st.place && st.place <= qz.prizes ? `<p class="qh-won">${placeText(st.place)}</p>` : ''}
       <a class="btn ghost small" href="#profilo/gioco">Rivedi le risposte</a>
     </section>`;
   }
   return `<section class="card quiz-card">
+    ${prizeHTML(qz)}
     <div class="qc-emojis" aria-hidden="true"><span>💍</span><span>🥂</span><span>🎉</span></div>
     <h3 class="qc-title">${esc(qz.title)}</h3>
     ${qz.intro ? `<p>${richText(qz.intro)}</p>` : ''}
@@ -1580,6 +1599,36 @@ function quizCardHTML() {
 }
 
 const LETTERS = 'ABCDEF';
+const MEDALS = ['🥇', '🥈', '🥉'];
+const PLACES = ['Primo', 'Secondo', 'Terzo', 'Quarto', 'Quinto', 'Sesto', 'Settimo', 'Ottavo', 'Nono', 'Decimo'];
+const placeText = (place) => `${MEDALS[place - 1] || '🏅'} ${PLACES[place - 1] || `${place}°`} posto: hai vinto un premio! 🎁`;
+
+/** In big letters: the first few who get everything right win a prize. */
+function prizeHTML(qz) {
+  const n = qz?.prizes || 0;
+  if (!n) return '';
+  const left = qz.prizesLeft ?? n;
+  const text = !left
+    ? `${n === 1 ? 'Il premio è già stato vinto' : `I ${n} premi sono già stati vinti`}, ma il trofeo brillante è ancora in palio ✨`
+    : n === 1
+      ? 'Il primo che indovina tutto vince un premio!'
+      : `I primi ${n} che indovinano tutto vincono un premio!`;
+  const still = left && left < n ? `<small>${left === 1 ? 'Resta un solo premio: sbrigati!' : `Restano ${left} premi su ${n}`}</small>` : '';
+  return `<div class="quiz-prize ${left ? '' : 'gone'}"><span class="qp-gift" aria-hidden="true">🎁</span><b>${text}</b>${still}</div>`;
+}
+
+const RIGHT_WORDS = ['🎉 Esatto!', '🎯 Centro!', '💙 Li conosci bene!', '✨ Giusto!', '🥂 Perfetto!'];
+// Wrong answers get a kind word, never a scolding.
+const COMFORT_WORDS = [
+  'Quasi! Gli sposi ti perdonano 💙',
+  'Capita anche ai migliori! 😅',
+  'Niente paura: il trofeo arriva lo stesso 🏆',
+  'Questa era difficile, lo ammettiamo 🙈',
+  'Beh, ora lo sai: al ricevimento potrai stupire tutti 😉',
+  'Errore perdonato: si brinda lo stesso 🥂',
+  'Niccolò e Beatrice ridono, non si offendono 😂',
+  'Coraggio, la prossima è tua! 💪',
+];
 
 function quizComment(score, total) {
   if (score === total) return ['Perfetto!', 'Conosci gli sposi alla perfezione ✨'];
@@ -1605,10 +1654,12 @@ async function viewQuiz(main) {
   }
   const total = data.questions.length;
   const nextIndex = () => data.questions.findIndex((item) => item.chosen === undefined);
+  let misses = data.questions.filter((item) => item.chosen !== undefined && item.chosen !== item.answer).length;
 
   const showIntro = () => {
     main.innerHTML = `<div class="container quiz">${top()}
       <section class="card quiz-intro">
+        ${prizeHTML({ ...S.settings.quiz, prizes: data.prizes })}
         <div class="qc-trophy big">${trophySVG('shiny')}</div>
         <h2 class="qc-title">${esc(data.title)}</h2>
         ${data.intro ? `<p>${richText(data.intro)}</p>` : ''}
@@ -1661,19 +1712,22 @@ async function viewQuiz(main) {
         return data.done || n < 0 ? showResult(false) : showQuestion(n);
       }
       Object.assign(item, { chosen: choice, answer: r.answer, fact: r.fact });
-      Object.assign(data, { score: r.score, done: r.done, trophy: r.trophy });
+      Object.assign(data, { score: r.score, done: r.done, trophy: r.trophy, place: r.place });
       S.me = r.me;
       opts[r.answer].classList.add('right');
       if (!r.correct) btn.classList.add('wrong');
       $('.quiz-bar i', main).style.width = `${((i + 1) / total) * 100}%`;
       const fb = $('.quiz-feedback', main);
       fb.className = `quiz-feedback show ${r.correct ? 'ok' : 'ko'}`;
-      fb.innerHTML = `<b>${r.correct ? '🎉 Esatto!' : `😅 Quasi! Era «${esc(item.options[r.answer])}»`}</b>${r.fact ? `<p>${esc(r.fact)}</p>` : ''}`;
+      fb.innerHTML = r.correct
+        ? `<b>${RIGHT_WORDS[i % RIGHT_WORDS.length]}</b>${r.fact ? `<p>${esc(r.fact)}</p>` : ''}`
+        : `<b>${COMFORT_WORDS[misses++ % COMFORT_WORDS.length]}</b>
+           <p>La risposta giusta era <b>«${esc(item.options[r.answer])}»</b>.</p>${r.fact ? `<p>${esc(r.fact)}</p>` : ''}`;
       if (r.correct) {
         const b = btn.getBoundingClientRect();
         confetti({ x: b.left + b.width / 2, y: b.top + b.height / 2, count: 60, spread: 55, power: 0.9 });
       }
-      if (r.done) updateAvatarBtn();
+      if (r.done) updateTopTrophy();
       const next = $('.quiz-next', main);
       next.textContent = r.done ? 'Scopri il tuo trofeo 🏆' : 'Avanti';
       next.hidden = false;
@@ -1693,6 +1747,13 @@ async function viewQuiz(main) {
         <div class="qc-label">${trophyTitle(data.trophy)}</div>
         <h2 class="qc-title">${headline}</h2>
         <p class="qr-score">Hai indovinato <b>${data.score}</b> risposte su <b>${total}</b></p>
+        ${
+          shiny && data.prizes
+            ? data.place && data.place <= data.prizes
+              ? `<div class="quiz-prize won"><b>${placeText(data.place)}</b><small>Gli sposi ti aspettano per consegnartelo</small></div>`
+              : '<p class="small muted">I premi erano già stati vinti, ma il trofeo brillante è tutto tuo ✨</p>'
+            : ''
+        }
         <p class="muted">${comment}</p>
         ${shiny ? '' : '<p class="small muted">Il trofeo brillante va solo a chi indovina tutte le risposte ✨</p>'}
         <p class="small muted">Da ora il trofeo compare accanto al tuo nome${S.settings.mode === 'live' ? ', anche nella chat LIVE' : ' e, il giorno delle nozze, nella chat LIVE'}.</p>
@@ -1703,7 +1764,12 @@ async function viewQuiz(main) {
         <p class="small muted">Chi ha indovinato tutte le risposte</p>
         ${
           data.champions.length
-            ? `<ul class="mates">${data.champions.map((n) => `<li><span class="avatar sm" style="background:${colorFor(n)}">${esc(initials(n))}</span>${esc(n)}${trophyBadge('shiny', 'trophy-mini')}</li>`).join('')}</ul>`
+            ? `<ol class="mates podium">${data.champions
+                .map(
+                  (n, k) =>
+                    `<li><span class="medal" aria-hidden="true">${k < data.prizes ? MEDALS[k] || '🏅' : ''}</span><span class="avatar sm" style="background:${colorFor(n)}">${esc(initials(n))}</span><span class="pd-name">${esc(n)}${trophyBadge('shiny', 'trophy-mini')}</span>${k < data.prizes ? '<span class="pd-prize">🎁 premio</span>' : ''}</li>`,
+                )
+                .join('')}</ol>`
             : '<p class="muted">Ancora nessuno: tocca agli altri invitati!</p>'
         }
       </section>

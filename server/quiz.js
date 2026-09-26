@@ -1,5 +1,6 @@
 // "Il gioco degli sposi": a quiz about the couple in every guest's profile.
-// Everyone who finishes gets a trophy; answering everything right earns the shiny one.
+// Everyone who finishes gets a trophy; answering everything right earns the shiny one,
+// and the first few to do so (quiz.prizes) win a prize from the couple.
 // Correct answers never leave the server until the guest has answered that question.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,9 +33,19 @@ export function sanitizeQuiz(v) {
     enabled: v.enabled !== false,
     title: cleanText(v.title, 120) || 'Quanto conosci gli sposi?',
     intro: cleanText(v.intro, 600),
+    prizes: Math.max(0, Math.min(10, Math.round(Number(v.prizes) || 0))),
     questions,
   };
 }
+
+/** Guests with the shiny trophy, first to finish first: the first `prizes` of them win. */
+const championRows = () =>
+  db.prepare("SELECT id, name, quiz_done_at FROM guests WHERE trophy = 'shiny' ORDER BY quiz_done_at, id LIMIT 50").all();
+
+const placeOf = (g) => {
+  const i = championRows().findIndex((r) => r.id === g.id);
+  return i < 0 ? null : i + 1;
+};
 
 const signature = (quiz) =>
   JSON.stringify((quiz?.questions || []).map((item) => [item.text, item.options, item.answer]));
@@ -76,7 +87,7 @@ export function quizMe(g) {
   const quiz = getSettings().quiz;
   const total = quiz?.questions?.length || 0;
   const answered = g.quiz_done_at ? total : answersOf(g, total).filter((a) => a !== null).length;
-  return { answered, score: g.quiz_score ?? 0, done: !!g.quiz_done_at };
+  return { answered, score: g.quiz_score ?? 0, done: !!g.quiz_done_at, place: g.trophy === 'shiny' ? placeOf(g) : null };
 }
 
 export function registerQuizRoutes(app, { meJson }) {
@@ -91,13 +102,10 @@ export function registerQuizRoutes(app, { meJson }) {
     if (!req.guest) return res.status(401).json({ error: 'Registrati per giocare' });
     const g = q.guestById.get(req.guest.id);
     const answers = answersOf(g, quiz.questions.length);
-    const champions = db
-      .prepare("SELECT name FROM guests WHERE trophy = 'shiny' ORDER BY quiz_done_at LIMIT 50")
-      .all()
-      .map((r) => r.name);
     res.json({
       title: quiz.title,
       intro: quiz.intro,
+      prizes: quiz.prizes || 0,
       questions: quiz.questions.map((item, i) => ({
         emoji: item.emoji,
         text: item.text,
@@ -107,7 +115,8 @@ export function registerQuizRoutes(app, { meJson }) {
       score: g.quiz_score ?? 0,
       done: !!g.quiz_done_at,
       trophy: g.trophy || null,
-      champions,
+      place: g.trophy === 'shiny' ? placeOf(g) : null,
+      champions: championRows().map((r) => r.name),
       players: db.prepare('SELECT COUNT(*) AS n FROM guests WHERE quiz_done_at IS NOT NULL').get().n,
     });
   });
@@ -146,6 +155,7 @@ export function registerQuizRoutes(app, { meJson }) {
       score,
       done,
       trophy,
+      place: trophy === 'shiny' ? placeOf(g) : null,
       me: meJson(q.guestById.get(g.id)),
     });
   });
@@ -157,6 +167,11 @@ export function quizStats() {
     playing: n('SELECT COUNT(*) AS n FROM guests WHERE quiz_answers IS NOT NULL AND quiz_done_at IS NULL'),
     finished: n('SELECT COUNT(*) AS n FROM guests WHERE quiz_done_at IS NOT NULL'),
     shiny: n("SELECT COUNT(*) AS n FROM guests WHERE trophy = 'shiny'"),
+    prizes: getSettings().quiz?.prizes || 0,
+    // Who to hand the prizes to, in order.
+    winners: championRows()
+      .slice(0, getSettings().quiz?.prizes || 0)
+      .map((r) => ({ name: r.name, at: r.quiz_done_at })),
   };
 }
 

@@ -374,6 +374,7 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
   assert.equal((await mario.get('/api/state')).data.settings.quiz, null);
   const quiz = {
     title: 'Quanto conosci gli sposi?',
+    prizes: 3,
     questions: [
       { emoji: '🎂', text: 'Domanda uno', options: ['A', '', 'B', 'C'], answer: 2, fact: 'Era B' },
       { text: 'Domanda due', options: ['Sì', 'No'], answer: 0 },
@@ -386,7 +387,11 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
   assert.equal(saved.questions[0].answer, 1, 'the right answer follows its option');
 
   const pub = (await client().get('/api/state')).data.settings.quiz;
-  assert.deepEqual(pub, { title: 'Quanto conosci gli sposi?', intro: '', count: 2 }, 'no questions in the public state');
+  assert.deepEqual(
+    pub,
+    { title: 'Quanto conosci gli sposi?', intro: '', count: 2, prizes: 3, prizesLeft: 3 },
+    'no questions in the public state',
+  );
   assert.equal((await client().get('/api/quiz')).status, 401);
 
   const game = (await mario.get('/api/quiz')).data;
@@ -397,12 +402,15 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
   assert.equal((await mario.post('/api/quiz/answer', { index: 1, choice: 5 })).status, 400);
   const last = await mario.post('/api/quiz/answer', { index: 1, choice: 0 });
   assert.equal(last.data.trophy, 'classic', 'a trophy for everyone who finishes');
-  assert.deepEqual(last.data.me.quiz, { answered: 2, score: 1, done: true });
+  assert.deepEqual(last.data.me.quiz, { answered: 2, score: 1, done: true, place: null });
   assert.equal((await mario.get('/api/quiz')).data.questions[0].chosen, 0, 'answers can be reviewed');
 
   await anna.post('/api/quiz/answer', { index: 0, choice: 1 });
   const annaDone = await anna.post('/api/quiz/answer', { index: 1, choice: 0 });
   assert.equal(annaDone.data.trophy, 'shiny');
+  assert.equal(annaDone.data.place, 1, 'first with everything right: a prize');
+  assert.equal(last.data.place, null);
+  assert.equal((await anna.get('/api/state')).data.settings.quiz.prizesLeft, 2);
   assert.deepEqual((await mario.get('/api/quiz')).data.champions, ['Anna Bianchi']);
   assert.equal((await anna.get('/api/state')).data.me.trophy, 'shiny');
 
@@ -412,7 +420,9 @@ test('quiz: answers stay secret, everyone gets a trophy, all right = shiny one',
   const list = (await mario.get('/api/messages')).data.messages;
   assert.equal(list.find((m) => m.id === msg.id).trophy, 'shiny');
 
-  assert.deepEqual((await admin.get('/api/admin/overview')).data.quiz, { playing: 0, finished: 2, shiny: 1 });
+  const stats = (await admin.get('/api/admin/overview')).data.quiz;
+  assert.deepEqual([stats.finished, stats.shiny, stats.prizes], [2, 1, 3]);
+  assert.deepEqual(stats.winners.map((w) => w.name), ['Anna Bianchi'], 'the couple sees who wins the prizes');
   await admin.post('/api/admin/quiz/reset');
   assert.equal((await anna.get('/api/state')).data.me.trophy, null);
 });

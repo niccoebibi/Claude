@@ -90,9 +90,10 @@
   // Some guests have already played the couple's quiz in the preview.
   const QUIZ_TOTAL = INITIAL.settings.quiz?.questions?.length || 0;
   function sampleQuiz(i) {
-    const played = QUIZ_TOTAL && i > 1 && (i % 7 === 1 || [7, 19, 44].includes(i));
+    // One perfect score so far: two of the three prizes are still up for grabs.
+    const played = QUIZ_TOTAL && i > 1 && (i % 7 === 1 || i === 19);
     if (!played) return { quizAnswers: null, quizScore: null, quizDoneAt: null, trophy: null };
-    const shiny = [7, 19, 44].includes(i);
+    const shiny = i === 19;
     const score = shiny ? QUIZ_TOTAL : Math.max(3, QUIZ_TOTAL - 1 - (i % 7));
     return { quizAnswers: [], quizScore: score, quizDoneAt: Date.now() - (200 - i) * 600000, trophy: shiny ? 'shiny' : 'classic' };
   }
@@ -234,17 +235,27 @@
   function publicSettings() {
     const { email, adminEmail, revealAnnounced, quiz, ...rest } = S(); // eslint-disable-line no-unused-vars
     const qz = quizOf();
-    return { ...structuredClone(rest), quiz: qz ? { title: qz.title, intro: qz.intro, count: qz.questions.length } : null };
+    const prizes = qz?.prizes || 0;
+    const summary = qz && {
+      title: qz.title,
+      intro: qz.intro,
+      count: qz.questions.length,
+      prizes,
+      prizesLeft: Math.max(0, prizes - champions().length),
+    };
+    return { ...structuredClone(rest), quiz: summary || null };
   }
   function adminSettings() {
     const s = structuredClone(S());
     s.email = { ...s.email, pass: '', hasPass: !!S().email.pass };
     return s;
   }
+  const champions = () => store.guests.filter((x) => x.trophy === 'shiny').sort((a, b) => a.quizDoneAt - b.quizDoneAt);
+  const placeOf = (g) => (g.trophy === 'shiny' ? champions().indexOf(g) + 1 : null);
   function quizMe(g) {
     const total = quizOf()?.questions.length || 0;
     const answered = g.quizDoneAt ? total : (g.quizAnswers || []).filter((a) => a !== null && a !== undefined).length;
-    return { answered, score: g.quizScore ?? 0, done: !!g.quizDoneAt };
+    return { answered, score: g.quizScore ?? 0, done: !!g.quizDoneAt, place: placeOf(g) };
   }
   function meJson(g) {
     return {
@@ -277,7 +288,13 @@
         };
       })
       .filter((item) => item.text && item.options.length >= 2);
-    return { enabled: v.enabled !== false, title: String(v.title || '').trim() || 'Quanto conosci gli sposi?', intro: String(v.intro || ''), questions };
+    return {
+      enabled: v.enabled !== false,
+      title: String(v.title || '').trim() || 'Quanto conosci gli sposi?',
+      intro: String(v.intro || ''),
+      prizes: Math.max(0, Math.min(10, Math.round(Number(v.prizes) || 0))),
+      questions,
+    };
   }
   function quizStats() {
     const gs = store.guests;
@@ -285,6 +302,10 @@
       playing: gs.filter((g) => g.quizAnswers?.length && !g.quizDoneAt).length,
       finished: gs.filter((g) => g.quizDoneAt).length,
       shiny: gs.filter((g) => g.trophy === 'shiny').length,
+      prizes: quizOf()?.prizes || 0,
+      winners: champions()
+        .slice(0, quizOf()?.prizes || 0)
+        .map((g) => ({ name: g.name, at: g.quizDoneAt })),
     };
   }
 
@@ -740,6 +761,8 @@
       return {
         title: qz.title,
         intro: qz.intro,
+        prizes: qz.prizes || 0,
+        place: placeOf(g),
         questions: qz.questions.map((item, i) => ({
           emoji: item.emoji,
           text: item.text,
@@ -749,7 +772,7 @@
         score: g.quizScore ?? 0,
         done: !!g.quizDoneAt,
         trophy: g.trophy || null,
-        champions: store.guests.filter((x) => x.trophy === 'shiny').sort((a, b) => a.quizDoneAt - b.quizDoneAt).map((x) => x.name),
+        champions: champions().map((x) => x.name),
         players: store.guests.filter((x) => x.quizDoneAt).length,
       };
     }],
@@ -773,7 +796,7 @@
         trophy: done ? (score === qz.questions.length ? 'shiny' : 'classic') : null,
       });
       save();
-      return { correct: b.choice === item.answer, answer: item.answer, fact: item.fact, score, done, trophy: g.trophy, me: meJson(g) };
+      return { correct: b.choice === item.answer, answer: item.answer, fact: item.fact, score, done, trophy: g.trophy, place: placeOf(g), me: meJson(g) };
     }],
 
     ['*', /^\/api\/admin\//, () => (store.admin ? null : fail(401, 'Accesso riservato agli sposi'))],
@@ -1192,7 +1215,7 @@
         <li>Registrati come farà un invitato (nome ed email qualsiasi)</li>
         <li>Tocca <b>«Sposi (Regia)»</b> in alto: è il pannello di Niccolò e Beatrice</li>
         <li>Prova <b>«Svela adesso»</b> per scoprire il tavolo e la piantina, poi apri la <b>Chat LIVE</b></li>
-        ${quizOf() ? '<li>Nel <b>Profilo</b> c’è il gioco degli sposi: indovina tutto e vinci il trofeo brillante 🏆</li>' : ''}
+        ${quizOf() ? '<li>Gioca a <b>«Quanto conosci gli sposi?»</b>: indovina tutto e vinci il trofeo brillante 🏆</li>' : ''}
       </ol>
       <div class="sheet-actions"><button class="btn primary block" data-x>Inizia</button></div></div>`;
     document.body.appendChild(wrap);
